@@ -547,15 +547,25 @@ function start(list) {
   queue = build(list); qScript = makeRuns(queue.length); idx = 0; correct = 0; misses = []; inResult = false; render(); saveProg(0);
 }
 
-// Unfinished run is kept in this browser so it can be resumed
+// Unfinished run is kept in this browser so it can be resumed; each topic keeps its own
+const progKey = (t = topic) => t === "all" ? PROG_KEY : PROG_KEY + ":" + t;
 function saveProg(at) {
-  try { localStorage.setItem(PROG_KEY, JSON.stringify({ q: queue.map(x => ITEMS.indexOf(x)), s: qScript, i: at, c: correct, m: misses.map(x => ITEMS.indexOf(x)) })); } catch (e) {}
+  try { localStorage.setItem(progKey(), JSON.stringify({ q: queue.map(x => ITEMS.indexOf(x)), s: qScript, i: at, c: correct, m: misses.map(x => ITEMS.indexOf(x)) })); } catch (e) {}
+  renderTopics();
 }
-function clearProg() { try { localStorage.removeItem(PROG_KEY); } catch (e) {} }
-function resumeOffer() {
+function clearProg() { try { localStorage.removeItem(progKey()); } catch (e) {} renderTopics(); }
+function loadProg(t) {
   let p = null;
-  try { p = JSON.parse(localStorage.getItem(PROG_KEY) || "null"); } catch (e) {}
-  if (!p || !Array.isArray(p.q) || p.i <= 0 || p.i >= p.q.length || p.q.some(i => !ITEMS[i])) return false;
+  try { p = JSON.parse(localStorage.getItem(progKey(t)) || "null"); } catch (e) {}
+  return p && Array.isArray(p.q) && p.i > 0 && p.i < p.q.length && !p.q.some(i => !ITEMS[i]) ? p : null;
+}
+function resumeFrom(p) {
+  queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
+  idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
+}
+function resumeOffer() {
+  const p = loadProg();
+  if (!p) return false;
   app.innerHTML = `
     <section class="card result noconv">
       <h3 style="margin:0">Тест не закончен</h3>
@@ -565,10 +575,7 @@ function resumeOffer() {
         <button class="btn ghost" id="restart">Начать заново</button>
       </div>
     </section>`;
-  document.getElementById("resume").addEventListener("click", () => {
-    queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
-    idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
-  });
+  document.getElementById("resume").addEventListener("click", () => resumeFrom(p));
   document.getElementById("restart").addEventListener("click", () => { clearProg(); start(pool()); });
   document.getElementById("resume").focus();
   return true;
@@ -656,6 +663,7 @@ function plain(q) {
 
 function finish() {
   const total = queue.length, pct = Math.round(correct / total * 100);
+  if (total === pool().length) { try { localStorage.setItem(progKey() + ":done", JSON.stringify({ c: correct, n: total })); } catch (e) {} renderTopics(); }
   const msg = pct === 100 ? "Без единой ошибки. Отлично!" : pct >= 85 ? "Очень хорошо. Повтори ошибки, и будет идеально." : pct >= 60 ? "Неплохо. Прогони ошибки ещё раз." : "Загляни в шпаргалку сверху и попробуй ещё раз.";
   app.innerHTML = `
     <section class="card result">
@@ -733,12 +741,21 @@ function pool() { return topic === "all" ? ITEMS : ITEMS.filter(x => String(x.s)
 function renderTopics() {
   const el = document.getElementById("topics");
   if (typeof NO_TOPICS !== "undefined") { el.hidden = true; return; }
+  const badge = (k, n) => {
+    const p = loadProg(k);
+    if (p) return `${p.i}/${p.q.length}`;
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(progKey(k) + ":done") || "null"); } catch (e) {}
+    return d ? `✓ ${d.c}/${d.n}` : n;
+  };
   el.innerHTML = [["all", "Все темы", ITEMS.length], ...TOPICS.map(s => [String(s), stageName(s), ITEMS.filter(x => x.s === s).length])]
-    .map(([k, l, n]) => `<button type="button" data-t="${k}" aria-pressed="${k === topic}">${l}<span class="n">${n}</span></button>`).join("");
+    .map(([k, l, n]) => `<button type="button" data-t="${k}" aria-pressed="${k === topic}">${l}<span class="n">${badge(k, n)}</span></button>`).join("");
   el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     topic = b.dataset.t;
     try { localStorage.setItem(TOPIC_KEY, topic); } catch (e) {}
-    renderTopics(); clearProg(); start(pool());
+    renderTopics();
+    const p = loadProg();
+    if (p) resumeFrom(p); else start(pool());
   }));
 }
 renderTopics();
