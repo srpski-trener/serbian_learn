@@ -138,6 +138,13 @@ td.f b { color: var(--accent); font-weight: 500; }
 .ab-l { color: var(--accent); }
 .ab-r { font-size: 0.85rem; color: var(--muted); }
 header details.cheat { margin-top: 10px; }
+.chip { font: inherit; color: inherit; text-align: left; border: none; cursor: pointer; }
+.chip:hover:not(:disabled) { background: var(--accent-soft); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip:disabled { cursor: default; }
+.chip .cs { font-size: 0.72rem; color: var(--accent); font-weight: 700; }
+.chip.saved .cs { color: var(--good); }
+.parse-h a { color: var(--accent); }
 @media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
@@ -348,11 +355,40 @@ function analyze(text, over) {
     return { w, pos: e ? e[0] : "", ru: e ? e[1] : "" };
   });
 }
-function breakdownHTML(text, over) {
-  return `<div class="parse"><span class="parse-h">Разбор</span><div class="chips">` + analyze(text, over).map(t =>
-    `<span class="chip pos-${t.pos}"><span class="cw">${esc(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span></span>`
-  ).join("") + `</div></div>`;
+// Personal dictionary shared with recnik.html (same site => same browser storage)
+const DICT_KEY = "srpski-recnik-words";
+function dictLoad() { try { return JSON.parse(localStorage.getItem(DICT_KEY) || "[]"); } catch (e) { return []; } }
+const dictKey = (sr, ru) => (sr + "|" + ru).toLowerCase();
+function dictHas(sr, ru) { return dictLoad().some(w => dictKey(w.sr, w.ru) === dictKey(sr, ru)); }
+function dictAdd(sr, ru, ex) {
+  const list = dictLoad();
+  if (list.some(w => dictKey(w.sr, w.ru) === dictKey(sr, ru))) return true;
+  list.push({ id: "w" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), sr, ru, ex, box: 0, right: 0, wrong: 0, added: Date.now() });
+  try { localStorage.setItem(DICT_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
 }
+let lastParse = null;
+function breakdownHTML(text, over) {
+  const toks = analyze(text, over);
+  const ex = text.replace(/<br>/g, " ").replace(/\s+/g, " ").trim();
+  lastParse = toks.map((t, i) => {
+    const sr = i > 0 && t.w[0] !== t.w[0].toLowerCase() ? t.w : t.w.toLowerCase();
+    return { sr, ru: t.ru, ex };
+  });
+  return `<div class="parse"><span class="parse-h">Разбор · нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
+    const saved = t.ru && dictHas(lastParse[i].sr, t.ru);
+    return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${esc(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
+  }).join("") + `</div></div>`;
+}
+document.addEventListener("click", e => {
+  const c = e.target.closest && e.target.closest(".chip[data-i]");
+  if (!c || !lastParse || c.classList.contains("saved")) return;
+  const t = lastParse[+c.dataset.i];
+  if (!t || !t.ru) return;
+  const ok = dictAdd(t.sr, t.ru, t.ex);
+  const lab = c.querySelector(".cs");
+  if (ok) { c.classList.add("saved"); lab.textContent = "в словаре ✓"; c.title = "Уже в словаре"; }
+  else lab.textContent = "не сохранилось";
+});
 
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 // regular verbs (endings + pronouns) mixed together first, irregular after
