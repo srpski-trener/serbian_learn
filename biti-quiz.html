@@ -299,6 +299,26 @@ const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  zoveš: ["V", "зовёшь (kako se zoveš = как тебя зовут)"], zove: ["V", "зовёт (zove se = его/её зовут)"], zovemo: ["V", "зовём"], zovu: ["V", "зовут"],
+  budim: ["V", "бужу (budim se = просыпаюсь)"], budiš: ["V", "будишь (budiš se = просыпаешься)"], budi: ["V", "будит (budi se = просыпается)"], budite: ["V", "будите"],
+  tušira: ["V", "моет под душем (tušira se = принимает душ)"], selimo: ["V", "перевозим (selimo se = переезжаем)"], sele: ["V", "перевозят (sele se = переезжают)"], seli: ["V", "перевозит (seli se = переезжает)"], seliš: ["V", "перевозишь (seliš se = переезжаешь)"],
+  useljavaju: ["V", "вселяют (useljavaju se = въезжают)"], useljavamo: ["V", "вселяем (useljavamo se = въезжаем)"], useljavate: ["V", "вселяете (useljavate se = въезжаете)"], useljava: ["V", "вселяет (useljava se = въезжает)"],
+  odmaram: ["V", "отдыхаю (с se)"], odmaraš: ["V", "отдыхаешь (с se)"], odmara: ["V", "отдыхает (с se)"], odmaramo: ["V", "отдыхаем (с se)"], odmarate: ["V", "отдыхаете (с se)"], odmaraju: ["V", "отдыхают (с se)"],
+  sećam: ["V", "помню (с se)"], sećaš: ["V", "помнишь (с se)"], seća: ["V", "помнит (с se)"], sećaju: ["V", "помнят (с se)"],
+  igra: ["V", "играет"], igraš: ["V", "играешь"], igramo: ["V", "играем"], igraju: ["V", "играют"],
+  počinje: ["V", "начинается"], završava: ["V", "заканчивает (završava se = заканчивается)"], ostajem: ["V", "остаюсь"], nadam: ["V", "надеюсь (с se)"], smeješ: ["V", "смеёшься (с se)"],
+  bavi: ["V", "занимается (с se)"], bavim: ["V", "занимаюсь (с se)"], baviš: ["V", "занимаешься (с se)"], bave: ["V", "занимаются (с se)"],
+  osećam: ["V", "чувствую (osećam se = чувствую себя)"], osećaš: ["V", "чувствуешь (osećaš se = чувствуешь себя)"], oseća: ["V", "чувствует"], osećate: ["V", "чувствуете"],
+  šetam: ["V", "гуляю"], plašim: ["V", "пугаю (plašim se = боюсь)"], vraćam: ["V", "возвращаю (vraćam se = возвращаюсь)"], vraća: ["V", "возвращает (vraća se = возвращается)"], vraćamo: ["V", "возвращаем"], vraćate: ["V", "возвращаете"], vraćaju: ["V", "возвращают"],
+  dešava: ["V", "происходит (с se)"], vidimo: ["V", "видим (vidimo se = увидимся)"], vidite: ["V", "видите"], vide: ["V", "видят"], vidiš: ["V", "видишь"],
+  sviđa: ["V", "нравится (с se)"], izdaje: ["V", "сдаёт (izdaje se = сдаётся)"], kaže: ["V", "говорит, скажет (kaže se = говорится)"], puši: ["V", "курит (puši se = курят)"],
+  plaća: ["V", "платит (plaća se = оплачивается)"], plaćam: ["V", "плачу"], ide: ["V", "идёт (ide se = идут, добираются)"], iznajmljuju: ["V", "сдают (iznajmljuju se = сдаются)"],
+  ovo: ["P", "это"], svako: ["P", "каждый"], prvog: ["M", "первый (какого?)"], sedam: ["M", "семь"], osam: ["M", "восемь"], šest: ["M", "шесть"],
+  zašto: ["Q", "почему"], kada: ["Q", "когда"], zar: ["T", "разве (zar ne = не так ли)"],
+  ujutru: ["D", "утром"], vikendom: ["D", "по выходным"], subotom: ["D", "по субботам"], rano: ["D", "рано"], jako: ["D", "очень"], unapred: ["D", "заранее"], samo: ["D", "только"], brzo: ["D", "быстро"], posle: ["R", "после"],
+  subotu: ["N", "субботу"], marka: ["N", "Марко (кого?)"], parku: ["N", "парке"], momci: ["N", "парни"], fudbal: ["N", "футбол"], film: ["N", "фильм"], čas: ["N", "урок"],
+  sportom: ["N", "спортом"], veče: ["N", "вечер"], pasa: ["N", "собак"], sestra: ["N", "сестра"], dvorištu: ["N", "дворе"], dana: ["N", "дня"], selidbe: ["N", "переезда"],
+  nekretninama: ["N", "недвижимостью"], adrese: ["N", "адреса"], srpskom: ["N", "сербском (na srpskom = по-сербски)"], gotovinom: ["N", "наличными"], centra: ["N", "центра"], stanovi: ["N", "квартиры"],
   ja: ["P", "я"], ti: ["P", "ты"], on: ["P", "он"], ona: ["P", "она / они (ср. р.)"], ono: ["P", "оно"], mi: ["P", "мы"], vi: ["P", "вы"], oni: ["P", "они"], one: ["P", "они (жен.)"],
   nas: ["P", "нас"], nam: ["P", "нам"], ništa: ["P", "ничего"], moj: ["P", "мой"], moja: ["P", "моя"], tvoja: ["P", "твоя"], vaše: ["P", "вашего"], vaši: ["P", "ваши"], ovaj: ["P", "этот"], ovoj: ["P", "этом"], svaki: ["P", "каждый"],
   sam: ["V", "есть (я)"], si: ["V", "есть (ты)"], je: ["V", "есть (он/она/оно)"], smo: ["V", "есть (мы)"], ste: ["V", "есть (вы)"], su: ["V", "есть (они)"],
@@ -364,6 +384,9 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  useljavamo: 2, iznajmljuju: 2, odmaram: 1, odmaraš: 1, odmara: 1, odmaramo: 1, odmarate: 1, odmaraju: 1, sećaju: 1, osećam: 1, osećaš: 1, oseća: 1, osećate: 1,
+  igraju: 1, igramo: 1, počinje: 1, završava: 2, ostajem: 1, vraćamo: 1, vraćate: 1, vraćaju: 1, vidimo: 1, vidite: 1, izdaje: 1, budite: 1,
+  dvorištu: 1, selidbe: 2, nekretninama: 3, unapred: 1, vikendom: 1, stanovi: 1, tušira: 0, dešava: 0, useljavaju: 0, useljavate: 0, useljava: 0, gotovinom: 0,
   radimo: 1, učimo: 1, gledamo: 1, gledaju: 1, jedete: 1, imamo: 1, imate: 1, živimo: 1, govori: 1, govorite: 1, govore: 1,
   plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 2, pijete: 1, volimo: 1, možete: 1,
   nećemo: 1, zovete: 1, dođete: 1, iznajmim: 2, odakle: 1, veoma: 1, mesečno: 1, nedeljom: 1, previše: 1, online: 0,
