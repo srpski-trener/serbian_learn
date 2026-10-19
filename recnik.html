@@ -135,7 +135,7 @@ details.tools[open] summary { margin-bottom: 10px; }
   <header>
     <a class="back noconv" href="index.html">← Все тесты</a>
     <h1>Мой <em>словарь</em></h1>
-    <p class="sub">Записывай слова, которые хочешь выучить, а потом тренируй их. Слова, на которых ошибаешься, попадаются чаще.</p>
+    <p class="sub">Собирай слова из тестов и тренируй их. Слова, на которых ошибаешься, попадаются чаще.</p>
     <div class="row" style="margin-top:8px">
       <div class="seg" role="group" aria-label="Алфавит">
         <button id="sc-mix" aria-pressed="true">Вперемешку</button>
@@ -152,15 +152,11 @@ details.tools[open] summary { margin-bottom: 10px; }
   </div>
 
   <section id="p-words" style="display:flex;flex-direction:column;gap:18px">
-    <form class="card" id="addf" autocomplete="off">
-      <h2>Новое слово</h2>
-      <div class="fields">
-        <label class="f">По-сербски (латиницей или кириллицей)<input type="text" id="in-sr" placeholder="kirija" required></label>
-        <label class="f">Перевод<input type="text" id="in-ru" placeholder="аренда" required></label>
-        <label class="f full">Пример или заметка (необязательно)<input type="text" id="in-ex" placeholder="Kirija je 450 evra mesečno."></label>
-      </div>
-      <div class="row"><button class="btn" type="submit" id="addbtn">Добавить</button><span class="msg" id="addmsg"></span></div>
-    </form>
+    <div class="card">
+      <h2>Как добавить слово</h2>
+      <p class="muted">Пройди любой <a href="index.html">тест</a>. После ответа в разборе предложения нажми на слово с пометкой «+ в словарь». Оно появится здесь вместе с переводом и примером.</p>
+      <span class="msg" id="addmsg"></span>
+    </div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between">
@@ -233,23 +229,13 @@ function setWhere(t) { document.getElementById("where").textContent = t; }
 function initStore() {
   store = localStore;
   store.load();
-  setWhere("Слова хранятся в этом браузере. Их добавляешь здесь или нажатием на слово в разборе после ответа в тестах. Чтобы перенести слова на другое устройство, используй блок внизу.");
+  setWhere("Слова хранятся в этом браузере. Чтобы перенести слова на другое устройство, используй блок внизу.");
   renderAll();
   // words added from a quiz in another tab
   window.addEventListener("storage", e => { if (e.key === LKEY) { store.load(); renderAll(); } });
 }
 
 // ---------- words tab ----------
-const STARTER = [
-  ["stan", "квартира", "Stan je u centru."], ["kirija", "аренда, квартплата", "Kirija je 450 evra mesečno."], ["gazda", "хозяин (квартиры)", "Gazda dolazi sutra."],
-  ["depozit", "залог", "Depozit je jedna kirija."], ["ugovor", "договор", "Potpisujemo ugovor danas."], ["ključ", "ключ", "Ključevi su kod gazde."],
-  ["soba", "комната", "Stan ima dve sobe."], ["kupatilo", "ванная", ""], ["kuhinja", "кухня", ""], ["komšija", "сосед", "Moj komšija je ljubazan."],
-  ["struja", "электричество", "Struja nije uključena u kiriju."], ["grejanje", "отопление", ""], ["račun", "счёт (в банке, за услуги)", "Plaćam račune online."],
-  ["kartica", "банковская карта", "Mogu li da platim karticom?"], ["novac", "деньги", ""], ["plata", "зарплата", ""], ["posao", "работа", "Idem na posao."],
-  ["prodavnica", "магазин", ""], ["pijaca", "рынок", ""], ["apoteka", "аптека", ""], ["lekar", "врач", ""],
-  ["skup", "дорогой", "Stan nije skup."], ["jeftin", "дешёвый", ""], ["slobodan", "свободный", "Da li je stan slobodan?"],
-  ["juče", "вчера", ""], ["danas", "сегодня", ""], ["sutra", "завтра", ""], ["izvinite", "извините", ""], ["molim", "пожалуйста; прошу", ""], ["hvala", "спасибо", "Hvala lepo!"]
-];
 const norm = s => s.trim().replace(/\s+/g, " ");
 const keyOf = w => (toLat(w.sr) + "|" + w.ru).toLowerCase();
 
@@ -262,9 +248,7 @@ function renderList() {
   const items = WORDS.slice().sort((a, b) => (b.added || 0) - (a.added || 0))
     .filter(w => !q || toLat(q).split(" ").every(t => (w.sr + " " + w.ru + " " + (w.ex || "")).toLowerCase().includes(t) || w.ru.toLowerCase().includes(q)));
   if (!WORDS.length) {
-    list.innerHTML = `<div class="empty"><p class="muted">Пока здесь пусто. Добавь первое слово в форме выше или начни с готового набора: квартира, банк и магазин.</p>
-      <button class="btn ghost" type="button" id="starter">Добавить ${STARTER.length} базовых слов</button></div>`;
-    document.getElementById("starter").addEventListener("click", addStarter);
+    list.innerHTML = `<div class="empty"><p class="muted">Пока здесь пусто. Слова появятся, когда ты добавишь их из разбора в тестах.</p></div>`;
     return;
   }
   if (!items.length) { list.innerHTML = `<p class="muted">Ничего не нашлось.</p>`; return; }
@@ -298,29 +282,67 @@ async function addWords(arr) {
   return n;
 }
 
-async function addStarter() {
-  const b = document.getElementById("starter"); if (b) { b.disabled = true; b.textContent = "Добавляю…"; }
-  try { const n = await addWords(STARTER.map(([sr, ru, ex]) => ({ sr, ru, ex }))); alertMsg("addmsg", `Добавлено слов: ${n}.`, true); }
-  catch (e) { alertMsg("addmsg", "Не получилось добавить: " + (e.message || e.code), false); if (b) { b.disabled = false; b.textContent = "Попробовать ещё раз"; } }
-}
-
-document.getElementById("addf").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!store) return;
-  // keep what was typed; convert Serbian Cyrillic input to Latin for storage
-  const sr = toLat(norm(document.getElementById("in-sr").value)), ru = norm(document.getElementById("in-ru").value), ex = toLat(norm(document.getElementById("in-ex").value));
-  if (!sr || !ru) { alertMsg("addmsg", "Заполни слово и перевод.", false); return; }
-  if (WORDS.some(w => keyOf(w) === keyOf({ sr, ru }))) { alertMsg("addmsg", "Такое слово уже есть в словаре.", false); return; }
-  const btn = document.getElementById("addbtn"); btn.disabled = true;
-  try {
-    await addWords([{ sr, ru, ex }]);
-    ["in-sr", "in-ru", "in-ex"].forEach(id => document.getElementById(id).value = "");
-    document.getElementById("in-sr").focus();
-    alertMsg("addmsg", `«${sr}» добавлено.`, true);
-  } catch (err) { alertMsg("addmsg", "Не получилось сохранить: " + (err.message || err.code), false); }
-  btn.disabled = false;
-});
 document.getElementById("q").addEventListener("input", renderList);
+
+// Only words that exist in the quizzes can be imported
+const LEX = {
+  ja: ["P", "я"], ti: ["P", "ты"], on: ["P", "он"], ona: ["P", "она / они (ср. р.)"], ono: ["P", "оно"], mi: ["P", "мы"], vi: ["P", "вы"], oni: ["P", "они"], one: ["P", "они (жен.)"],
+  nas: ["P", "нас"], nam: ["P", "нам"], ništa: ["P", "ничего"], moj: ["P", "мой"], moja: ["P", "моя"], tvoja: ["P", "твоя"], vaše: ["P", "вашего"], vaši: ["P", "ваши"], ovaj: ["P", "этот"], ovoj: ["P", "этом"], svaki: ["P", "каждый"],
+  sam: ["V", "есть (я)"], si: ["V", "есть (ты)"], je: ["V", "есть (он/она/оно)"], smo: ["V", "есть (мы)"], ste: ["V", "есть (вы)"], su: ["V", "есть (они)"],
+  nisam: ["V", "не есть (я)"], nisi: ["V", "не есть (ты)"], nije: ["V", "не есть (он/она)"], nismo: ["V", "не есть (мы)"], niste: ["V", "не есть (вы)"], nisu: ["V", "не есть (они)"],
+  jesam: ["V", "есть, да (я)"], jesi: ["V", "есть (ты), долгая форма"], jeste: ["V", "есть (вы), долгая форма"], jesu: ["V", "есть (они), долгая форма"],
+  radim: ["V", "работаю"], radiš: ["V", "работаешь"], radi: ["V", "работает"], radimo: ["V", "работаем"],
+  učim: ["V", "учу"], uče: ["V", "учатся"], učimo: ["V", "учим"],
+  gledamo: ["V", "смотрим"], gledaš: ["V", "смотришь"], gledaju: ["V", "смотрят"],
+  jedem: ["V", "ем"], jedeš: ["V", "ешь"], jedete: ["V", "едите"], jedu: ["V", "едят"],
+  ima: ["V", "имеет, есть"], imamo: ["V", "имеем, у нас есть"], imate: ["V", "имеете, у вас есть"], nema: ["V", "нет, не имеет"], nemam: ["V", "не имею, у меня нет"],
+  živim: ["V", "живу"], živi: ["V", "живёт"], žive: ["V", "живут"], živimo: ["V", "живём"],
+  govori: ["V", "говорит"], govorite: ["V", "говорите"], govore: ["V", "говорят"],
+  znam: ["V", "знаю"], zna: ["V", "знает"],
+  plaćamo: ["V", "платим"], plaćate: ["V", "платите"], plaćaju: ["V", "платят"], platim: ["V", "заплатить (я)"],
+  tražim: ["V", "ищу"], tražimo: ["V", "ищем"], čekamo: ["V", "ждём"],
+  razumem: ["V", "понимаю"], razumeju: ["V", "понимают"],
+  pijete: ["V", "пьёте"], piješ: ["V", "пить (ты)"], volim: ["V", "люблю"], volimo: ["V", "любим"], piše: ["V", "пишет"],
+  mogu: ["V", "могу / могут"], može: ["V", "может"], možete: ["V", "можете"],
+  hoću: ["V", "хочу"], hoćeš: ["V", "хочешь"], nećemo: ["V", "не хотим"],
+  idem: ["V", "иду"], ideš: ["V", "идёшь"], idu: ["V", "идут"],
+  zovem: ["V", "зову (zovem se = меня зовут)"], zovete: ["V", "зовёте (kako se zovete = как вас зовут)"],
+  dođe: ["V", "прийти (он)"], dođete: ["V", "прийти (вы)"], iznajmim: ["V", "снять в аренду (я)"],
+  se: ["T", "себя, -ся"], li: ["T", "ли (вопрос)"], ne: ["T", "не"],
+  i: ["C", "и"], ali: ["C", "но"],
+  u: ["R", "в"], na: ["R", "на"], iz: ["R", "из"], od: ["R", "от, с"], do: ["R", "до"], za: ["R", "для, на, по"], sa: ["R", "с"], kod: ["R", "у"],
+  gde: ["Q", "где / куда"], šta: ["Q", "что"], kako: ["Q", "как"], odakle: ["Q", "откуда"],
+  danas: ["D", "сегодня"], sutra: ["D", "завтра"], sad: ["D", "сейчас"], sada: ["D", "сейчас"], ovde: ["D", "здесь"], već: ["D", "уже"], još: ["D", "ещё"],
+  dobro: ["D", "хорошо"], veoma: ["D", "очень"], mesečno: ["D", "в месяц"], nedeljom: ["D", "по воскресеньям"], previše: ["D", "слишком много"], peške: ["D", "пешком"], online: ["D", "онлайн"], zajedno: ["D", "вместе"],
+  "450": ["M", "450"], dve: ["M", "две"], devet: ["M", "девять"], pet: ["M", "пять"], prvi: ["M", "первый"],
+  rusije: ["N", "России"], beograda: ["N", "Белграда"], beogradu: ["N", "Белграде"], srbiju: ["N", "Сербию"], sankt: ["N", "Санкт-"], peterburga: ["N", "Петербурга"], sadu: ["N", "Саде"],
+  marko: ["N", "Марко (имя)"], ana: ["N", "Ана (имя)"], mihail: ["N", "Михаил (имя)"], petrović: ["N", "Петрович (фамилия)"], jović: ["N", "Йович (фамилия)"],
+  komšija: ["N", "сосед"], komšije: ["N", "соседи"], vlasnik: ["N", "владелец"], stana: ["N", "квартиры"], stan: ["N", "квартира"], stanom: ["N", "квартирой"], stanu: ["N", "квартире"],
+  agent: ["N", "агент"], agenta: ["N", "агента"], nekretnine: ["N", "недвижимость"], centru: ["N", "центре"], grada: ["N", "города"], stanari: ["N", "жильцы"],
+  kirija: ["N", "аренда"], kiriju: ["N", "аренду"], evra: ["N", "евро"], gospodin: ["N", "господин"], sestre: ["N", "сёстры"],
+  banka: ["N", "банк"], banci: ["N", "банке"], banke: ["N", "банка"], banku: ["N", "банк (куда?)"], računi: ["N", "счета"], račune: ["N", "счета"], račun: ["N", "счёт"],
+  stolu: ["N", "столе"], selidbu: ["N", "переезд"], dete: ["N", "ребёнок"], deca: ["N", "дети"], kupatilo: ["N", "ванная"], prijatelji: ["N", "друзья"],
+  žena: ["N", "жена"], ključevi: ["N", "ключи"], gazde: ["N", "хозяина"], gazda: ["N", "хозяин"], školi: ["N", "школе"], školu: ["N", "школу"],
+  pasoš: ["N", "паспорт"], ugovor: ["N", "договор"], torbi: ["N", "сумке"], klijent: ["N", "клиент"], student: ["N", "студент"], turisti: ["N", "туристы"],
+  internet: ["N", "интернет"], kući: ["N", "дому"], kuće: ["N", "дома (kod kuće = дома)"], kuhinji: ["N", "кухне"], pravu: ["N", "праве (u pravu = прав)"], put: ["N", "раз"], septembra: ["N", "сентября"],
+  televiziju: ["N", "телевизор"], doručak: ["N", "завтрак"], parking: ["N", "парковка"], sobe: ["N", "комнаты"], psa: ["N", "собаку"], roditelji: ["N", "родители"], adresu: ["N", "адрес"],
+  majstora: ["N", "мастера"], slatkiša: ["N", "сладкого"], kraj: ["N", "район"], kafu: ["N", "кофе"], karticom: ["N", "картой"], meso: ["N", "мясо"], poruke: ["N", "сообщения"],
+  početkom: ["N", "в начале"], meseca: ["N", "месяца"], ponedeljak: ["N", "понедельник"], lift: ["N", "лифт"], dan: ["N", "день"],
+  novi: ["A", "новый, новые"], novom: ["A", "Новом"], ljubazni: ["A", "любезные"], zatvorena: ["A", "закрыт(а)"], spremni: ["A", "готовы"], zauzeti: ["A", "заняты"], bolesno: ["A", "больное"],
+  čisto: ["A", "чистое"], zadovoljni: ["A", "довольны"], skup: ["A", "дорогой"], dužni: ["A", "должны"], uključen: ["A", "включён"], slobodan: ["A", "свободный"], umoran: ["A", "уставший"],
+  "zadovoljan/zadovoljna": ["A", "доволен/довольна"], "nov/nova": ["A", "новый/новая"], "kriv/kriva": ["A", "виноват(а)"], "siguran/sigurna": ["A", "уверен(а)"], "spreman/spremna": ["A", "готов(а)"], "umoran/umorna": ["A", "устал(а)"]
+};
+const CONTEXT_WORDS = ["da", "malo", "ruski", "srpski", "engleski"];
+function validWord(w) {
+  if (!w || typeof w.sr !== "string" || typeof w.ru !== "string") return null;
+  const sr = toLat(norm(w.sr)), k = sr.toLowerCase();
+  let ru;
+  if (LEX[k]) ru = LEX[k][1];
+  else if (CONTEXT_WORDS.includes(k) && w.ru.length <= 60) ru = norm(w.ru);
+  else return null;
+  const ex = typeof w.ex === "string" && w.ex.length <= 200 && w.ex.toLowerCase().includes(k) && !/[ыэяюёщъьй]/i.test(w.ex) ? norm(w.ex) : "";
+  return { sr, ru, ex, box: Math.min(5, Math.max(0, Math.floor(+w.box) || 0)), right: Math.max(0, Math.floor(+w.right) || 0), wrong: Math.max(0, Math.floor(+w.wrong) || 0) };
+}
 
 // export / import
 document.getElementById("exp").addEventListener("click", () => {
@@ -337,9 +359,10 @@ document.getElementById("imp").addEventListener("click", async () => {
   let arr;
   try { arr = JSON.parse(document.getElementById("io").value); if (!Array.isArray(arr)) throw 0; }
   catch (e) { alertMsg("iomsg", "Не похоже на список слов. Вставь текст, скопированный из словаря.", false); return; }
-  arr = arr.filter(w => w && typeof w.sr === "string" && typeof w.ru === "string" && w.sr.trim() && w.ru.trim())
-    .map(w => ({ sr: norm(w.sr).slice(0, 120), ru: norm(w.ru).slice(0, 200), ex: typeof w.ex === "string" ? norm(w.ex).slice(0, 300) : "", box: Math.min(5, Math.max(0, +w.box || 0)), right: +w.right || 0, wrong: +w.wrong || 0 }));
-  try { const n = await addWords(arr); alertMsg("iomsg", `Загружено новых слов: ${n}.`, true); }
+  const total = arr.length;
+  arr = arr.map(validWord).filter(Boolean);
+  const skipped = total - arr.length;
+  try { const n = await addWords(arr); alertMsg("iomsg", `Загружено новых слов: ${n}.` + (skipped ? ` Пропущено ${skipped}: таких слов нет в тестах.` : ""), true); }
   catch (e) { alertMsg("iomsg", "Не получилось загрузить: " + (e.message || e.code), false); }
 });
 
