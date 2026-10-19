@@ -20,6 +20,7 @@
   --good: #1d7a4a;
   --good-soft: #e2f3ea;
   --bad: #b23a2a;
+  --stress: #d4231b;
   --bad-soft: #f9e6e2;
   --display: "Alegreya", Georgia, serif;
   --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
@@ -29,13 +30,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #111713; --surface: #19211c; --ink: #e5ece7; --muted: #9aa9a0; --line: #2b3830;
-    --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+    --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #111713; --surface: #19211c; --ink: #e5ece7; --muted: #9aa9a0; --line: #2b3830;
-  --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+  --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -148,7 +149,13 @@ header details.cheat { margin-top: 10px; }
 .back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
 .back:hover { text-decoration: underline; text-underline-offset: 3px; }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-.st { color: var(--accent); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.st { position: relative; }
+.st::after { content: ""; position: absolute; left: 50%; top: -0.12em; width: 0.1em; height: 0.36em; border-radius: 0.05em; background: var(--stress); transform: translateX(-30%) rotate(28deg); pointer-events: none; }
+.nostress .st::after { display: none; }
+.nostress .st-note { display: none; }
+.stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
+.stress-tg[aria-pressed="true"] { background: var(--stress); color: #fff; }
+.stress-tg:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
@@ -164,6 +171,7 @@ header details.cheat { margin-top: 10px; }
       <button id="sc-lat" aria-pressed="false">Latinica</button>
       <button id="sc-cyr" aria-pressed="false">Ћирилица</button>
     </div>
+    <button class="stress-tg noconv" id="stress-tg" aria-pressed="true" title="Показать или скрыть ударения">Ударения: вкл</button>
     <details class="cheat noconv" id="abc">
       <summary>Алфавит: латиница, кириллица и как звучит</summary>
       <div class="cheat-body">
@@ -364,10 +372,10 @@ function analyze(text, over) {
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
   radimo: 1, učimo: 1, gledamo: 1, gledaju: 1, jedete: 1, imamo: 1, imate: 1, živimo: 1, govori: 1, govorite: 1, govore: 1,
-  plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 1, pijete: 1, volimo: 1, možete: 1,
+  plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 2, pijete: 1, volimo: 1, možete: 1,
   nećemo: 1, zovete: 1, dođete: 1, iznajmim: 2, odakle: 1, veoma: 1, mesečno: 1, nedeljom: 1, previše: 1, online: 0,
   zajedno: 1, rusije: 1, beograda: 2, beogradu: 2, srbiju: 1, peterburga: 1, mihail: 1, petrović: 1, komšija: 1, komšije: 1,
-  agenta: 2, nekretnine: 3, stanari: 2, kirija: 1, kiriju: 1, gospodin: 2, računi: 1, račune: 1, selidbu: 2, kupatilo: 2,
+  agenta: 2, nekretnine: 3, stanari: 2, kirija: 1, kiriju: 1, gospodin: 1, računi: 1, račune: 1, selidbu: 2, kupatilo: 2,
   prijatelji: 1, ključevi: 1, ugovor: 1, turisti: 2, internet: 1, kuhinji: 1, septembra: 1, televiziju: 3, doručak: 1,
   roditelji: 1, adresu: 1, majstora: 1, slatkiša: 2, karticom: 1, poruke: 1, početkom: 1, meseca: 1, ponedeljak: 2,
   ljubazni: 1, zatvorena: 1, zauzeti: 1, bolesno: 1, zadovoljni: 1, uključen: 1, slobodan: 1, umoran: 1, umorna: 1,
@@ -384,18 +392,40 @@ function nuclei(w) {
   }
   return out;
 }
-function stressHTML(text, conv) {
+// Index of the stressed letter in a word, or -1. mono === false skips one-syllable words
+function stressAt(word, mono) {
+  const low = word.toLowerCase(), nu = nuclei(low);
+  if (UNSTRESSED.has(low) || !nu.length) return -1;
+  if (mono === false && nu.length === 1 && !(low in STRESS)) return -1;
+  const n = low in STRESS ? STRESS[low] : (nu.length <= 2 ? 1 : 0);
+  return n && nu[n - 1] !== undefined ? nu[n - 1] : -1;
+}
+function stressHTML(text, conv, mono) {
   conv = conv || (x => x);
   return String(text).split(/(\s+|\/)/).map(tok => {
     const m = tok.match(/^([^\p{L}]*)(\p{L}+)([^\p{L}]*)$/u);
     if (!m) return conv(esc(tok));
-    const [, pre, word, post] = m, low = word.toLowerCase();
-    let n = 0;
-    const nu = nuclei(low);
-    if (!UNSTRESSED.has(low)) n = low in STRESS ? STRESS[low] : (nu.length && nu.length <= 2 ? 1 : 0);
-    if (!n || !nu[n - 1] && nu[n - 1] !== 0) return conv(esc(tok));
-    const at = nu[n - 1];
+    const [, pre, word, post] = m, at = stressAt(word, mono);
+    if (at < 0) return conv(esc(tok));
     return conv(esc(pre + word.slice(0, at))) + `<span class="st">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1) + post));
+  }).join("");
+}
+// Sentence with a gap: whole words get stress marks; the gapped word is marked once filled
+function sentenceHTML(t, fill, cls) {
+  return t.split(/(<br>|\s+)/).map(tok => {
+    if (tok === "<br>") return "<br>";
+    if (!tok.includes("___")) return stressHTML(tok, null, false);
+    const pos = tok.indexOf("___");
+    if (fill == null) return esc(tok.slice(0, pos)) + '<span class="blank" id="blank">&nbsp;</span>' + esc(tok.slice(pos + 3));
+    const full = tok.slice(0, pos) + fill + tok.slice(pos + 3), m = full.match(/\p{L}+/u);
+    const sa = m ? stressAt(m[0], false) : -1, at = sa < 0 ? -1 : m.index + sa, a = pos, b = pos + fill.length;
+    let h = "";
+    for (let i = 0; i <= full.length; i++) {
+      if (i === b) h += "</span>";
+      if (i === a) h += `<span class="blank ${cls}" id="blank">`;
+      if (i < full.length) h += i === at ? `<span class="st">${esc(full[i])}</span>` : esc(full[i]);
+    }
+    return h;
   }).join("");
 }
 
@@ -418,7 +448,7 @@ function breakdownHTML(text, over) {
     const sr = i > 0 && t.w[0] !== t.w[0].toLowerCase() ? t.w : t.w.toLowerCase();
     return { sr, ru: t.ru, ex };
   });
-  return `<div class="parse"><span class="parse-h">Разбор · <span class="st">подчёркнута</span> ударная гласная · нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
+  return `<div class="parse"><span class="parse-h">Разбор <span class="st-note">· красная чёрточка над ударной гласной </span>· нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
     const saved = t.ru && dictHas(lastParse[i].sr, t.ru);
     return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${stressHTML(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
   }).join("") + `</div></div>`;
@@ -512,7 +542,7 @@ function render() {
   answered = false;
   const q = queue[idx];
   const opts = optsOf(q);
-  const sentence = (q.h ? `<span class="hint">(${q.h} = ${HRU[q.h] || ""})</span> ` : "") + q.t.split("___").map(esc).join('<span class="blank" id="blank">&nbsp;</span>');
+  const sentence = (q.h ? `<span class="hint">(${q.h} = ${HRU[q.h] || ""})</span> ` : "") + `<span id="sbody">${sentenceHTML(q.t)}</span>`;
   app.innerHTML = `
     <div class="bar"><span>${idx + 1} / ${queue.length}</span><div class="track"><div class="fill" style="width:${idx / queue.length * 100}%"></div></div><span>✓ ${correct}</span></div>
     <section class="card" aria-live="polite">
@@ -559,8 +589,7 @@ function choose(i) {
   app.querySelectorAll(".opt").forEach(b => b.disabled = true);
   document.getElementById("opt" + right).classList.add("ok");
   if (!ok) document.getElementById("opt" + i).classList.add("no");
-  const bl = document.getElementById("blank");
-  bl.textContent = fillOf(q); bl.classList.add(ok ? "ok" : "no");
+  document.getElementById("sbody").innerHTML = sentenceHTML(q.t, fillOf(q), ok ? "ok" : "no");
   document.getElementById("ru").hidden = false;
   const full = q.t.replace("___", fillOf(q));
   document.getElementById("parse").innerHTML = breakdownHTML(full, q.g);
@@ -649,6 +678,19 @@ function setScript(s) {
 ["mix", "lat", "cyr"].forEach(k => document.getElementById("sc-" + k).addEventListener("click", () => setScript(k)));
 
 if (!resumeOffer()) start(ITEMS);
+// Stress marks on/off, shared by all pages of the site
+let stressOn = true;
+try { stressOn = localStorage.getItem("srpski-stress") !== "off"; } catch (e) {}
+function setStress(on) {
+  stressOn = on;
+  try { localStorage.setItem("srpski-stress", on ? "on" : "off"); } catch (e) {}
+  document.body.classList.toggle("nostress", !on);
+  const b = document.getElementById("stress-tg");
+  b.setAttribute("aria-pressed", on);
+  b.textContent = on ? "Ударения: вкл" : "Ударения: выкл";
+}
+document.getElementById("stress-tg").addEventListener("click", () => setStress(!stressOn));
+setStress(stressOn);
 setScript(script);
 </script>
 
