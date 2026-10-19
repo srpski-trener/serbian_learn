@@ -150,7 +150,8 @@ header details.cheat { margin-top: 10px; }
 .back:hover { text-decoration: underline; text-underline-offset: 3px; }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .st { position: relative; }
-.st::after { content: ""; position: absolute; left: 50%; top: -0.12em; width: 0.1em; height: 0.36em; border-radius: 0.05em; background: var(--stress); transform: translateX(-30%) rotate(28deg); pointer-events: none; }
+.st::after { content: "\00B4"; position: absolute; left: 50%; top: 0.02em; transform: translateX(-42%); color: var(--stress); font-weight: 700; font-size: 1.05em; font-style: normal; line-height: 1; pointer-events: none; }
+.st.up::after { top: -0.3em; }
 .nostress .st::after { display: none; }
 .nostress .st-note { display: none; }
 .stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
@@ -407,7 +408,7 @@ function stressHTML(text, conv, mono) {
     if (!m) return conv(esc(tok));
     const [, pre, word, post] = m, at = stressAt(word, mono);
     if (at < 0) return conv(esc(tok));
-    return conv(esc(pre + word.slice(0, at))) + `<span class="st">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1) + post));
+    return conv(esc(pre + word.slice(0, at))) + `<span class="st${word[at] !== word[at].toLowerCase() ? " up" : ""}">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1) + post));
   }).join("");
 }
 // Sentence with a gap: whole words get stress marks; the gapped word is marked once filled
@@ -423,7 +424,7 @@ function sentenceHTML(t, fill, cls) {
     for (let i = 0; i <= full.length; i++) {
       if (i === b) h += "</span>";
       if (i === a) h += `<span class="blank ${cls}" id="blank">`;
-      if (i < full.length) h += i === at ? `<span class="st">${esc(full[i])}</span>` : esc(full[i]);
+      if (i < full.length) h += i === at ? `<span class="st${full[i] !== full[i].toLowerCase() ? " up" : ""}">${esc(full[i])}</span>` : esc(full[i]);
     }
     return h;
   }).join("");
@@ -448,7 +449,7 @@ function breakdownHTML(text, over) {
     const sr = i > 0 && t.w[0] !== t.w[0].toLowerCase() ? t.w : t.w.toLowerCase();
     return { sr, ru: t.ru, ex };
   });
-  return `<div class="parse"><span class="parse-h">Разбор <span class="st-note">· красная чёрточка над ударной гласной </span>· нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
+  return `<div class="parse"><span class="parse-h">Разбор <span class="st-note">· красный знак над ударной гласной </span>· нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
     const saved = t.ru && dictHas(lastParse[i].sr, t.ru);
     return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${stressHTML(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
   }).join("") + `</div></div>`;
