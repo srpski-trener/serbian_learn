@@ -145,6 +145,9 @@ header details.cheat { margin-top: 10px; }
 .chip .cs { font-size: 0.72rem; color: var(--accent); font-weight: 700; }
 .chip.saved .cs { color: var(--good); }
 .parse-h a { color: var(--accent); }
+.back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
+.back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 @media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
@@ -152,6 +155,7 @@ header details.cheat { margin-top: 10px; }
 <body>
 <div class="wrap">
   <header>
+    <a class="back noconv" href="index.html">← Все тесты</a>
     <h1>Глаголы <em>по лицам</em></h1>
     <p class="sub">В каждом предложении пропущено либо окончание глагола, либо местоимение. 19 частых глаголов, настоящее время.</p>
     <div class="script noconv" role="group" aria-label="Алфавит">
@@ -432,8 +436,36 @@ function makeRuns(n) {
   return out;
 }
 
+const PROG_KEY = "glagoli-progress";
 function start(list) {
-  queue = build(list); qScript = makeRuns(queue.length); idx = 0; correct = 0; misses = []; inResult = false; render();
+  queue = build(list); qScript = makeRuns(queue.length); idx = 0; correct = 0; misses = []; inResult = false; render(); saveProg(0);
+}
+
+// Unfinished run is kept in this browser so it can be resumed
+function saveProg(at) {
+  try { localStorage.setItem(PROG_KEY, JSON.stringify({ q: queue.map(x => ITEMS.indexOf(x)), s: qScript, i: at, c: correct, m: misses.map(x => ITEMS.indexOf(x)) })); } catch (e) {}
+}
+function clearProg() { try { localStorage.removeItem(PROG_KEY); } catch (e) {} }
+function resumeOffer() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(PROG_KEY) || "null"); } catch (e) {}
+  if (!p || !Array.isArray(p.q) || p.i <= 0 || p.i >= p.q.length || p.q.some(i => !ITEMS[i])) return false;
+  app.innerHTML = `
+    <section class="card result noconv">
+      <h3 style="margin:0">Тест не закончен</h3>
+      <p style="margin:0">Ты остановился на вопросе ${p.i + 1} из ${p.q.length}, верных ответов пока ${p.c}.</p>
+      <div class="actions">
+        <button class="btn" id="resume">Продолжить</button>
+        <button class="btn ghost" id="restart">Начать заново</button>
+      </div>
+    </section>`;
+  document.getElementById("resume").addEventListener("click", () => {
+    queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
+    idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
+  });
+  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(ITEMS); });
+  document.getElementById("resume").focus();
+  return true;
 }
 
 function render() {
@@ -501,6 +533,7 @@ function choose(i) {
   const nb = document.getElementById("next");
   nb.addEventListener("click", next);
   applyScript(app);
+  if (last) clearProg(); else saveProg(idx + 1);
   nb.focus();
 }
 
@@ -575,7 +608,7 @@ function setScript(s) {
 }
 ["mix", "lat", "cyr"].forEach(k => document.getElementById("sc-" + k).addEventListener("click", () => setScript(k)));
 
-start(ITEMS);
+if (!resumeOffer()) start(ITEMS);
 setScript(script);
 </script>
 
