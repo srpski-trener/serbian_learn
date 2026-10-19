@@ -148,6 +148,7 @@ header details.cheat { margin-top: 10px; }
 .back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
 .back:hover { text-decoration: underline; text-underline-offset: 3px; }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.st { color: var(--accent); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 @media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
@@ -359,6 +360,45 @@ function analyze(text, over) {
     return { w, pos: e ? e[0] : "", ru: e ? e[1] : "" };
   });
 }
+// Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
+// so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
+const STRESS = {
+  radimo: 1, učimo: 1, gledamo: 1, gledaju: 1, jedete: 1, imamo: 1, imate: 1, živimo: 1, govori: 1, govorite: 1, govore: 1,
+  plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 1, pijete: 1, volimo: 1, možete: 1,
+  nećemo: 1, zovete: 1, dođete: 1, iznajmim: 2, odakle: 1, veoma: 1, mesečno: 1, nedeljom: 1, previše: 1, online: 0,
+  zajedno: 1, rusije: 1, beograda: 2, beogradu: 2, srbiju: 1, peterburga: 1, mihail: 1, petrović: 1, komšija: 1, komšije: 1,
+  agenta: 2, nekretnine: 3, stanari: 2, kirija: 1, kiriju: 1, gospodin: 2, računi: 1, račune: 1, selidbu: 2, kupatilo: 2,
+  prijatelji: 1, ključevi: 1, ugovor: 1, turisti: 2, internet: 1, kuhinji: 1, septembra: 1, televiziju: 3, doručak: 1,
+  roditelji: 1, adresu: 1, majstora: 1, slatkiša: 2, karticom: 1, poruke: 1, početkom: 1, meseca: 1, ponedeljak: 2,
+  ljubazni: 1, zatvorena: 1, zauzeti: 1, bolesno: 1, zadovoljni: 1, uključen: 1, slobodan: 1, umoran: 1, umorna: 1,
+  zadovoljan: 1, zadovoljna: 1, siguran: 1, sigurna: 1, engleski: 1
+};
+// Clitics and short function words carry no stress of their own
+const UNSTRESSED = new Set(["sam", "si", "je", "smo", "ste", "su", "li", "se", "i", "u", "na", "iz", "od", "do", "za", "sa", "kod", "da", "ne", "ali", "mi", "nam", "nas"]);
+function nuclei(w) {
+  const V = c => c && "aeiou".includes(c), out = [];
+  for (let i = 0; i < w.length; i++) {
+    const c = w[i];
+    if (V(c)) out.push(i);
+    else if (c === "r" && !V(w[i - 1]) && !V(w[i + 1]) && w[i + 1] && /\p{L}/u.test(w[i + 1])) out.push(i);
+  }
+  return out;
+}
+function stressHTML(text, conv) {
+  conv = conv || (x => x);
+  return String(text).split(/(\s+|\/)/).map(tok => {
+    const m = tok.match(/^([^\p{L}]*)(\p{L}+)([^\p{L}]*)$/u);
+    if (!m) return conv(esc(tok));
+    const [, pre, word, post] = m, low = word.toLowerCase();
+    let n = 0;
+    const nu = nuclei(low);
+    if (!UNSTRESSED.has(low)) n = low in STRESS ? STRESS[low] : (nu.length && nu.length <= 2 ? 1 : 0);
+    if (!n || !nu[n - 1] && nu[n - 1] !== 0) return conv(esc(tok));
+    const at = nu[n - 1];
+    return conv(esc(pre + word.slice(0, at))) + `<span class="st">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1) + post));
+  }).join("");
+}
+
 // Personal dictionary shared with recnik.html (same site => same browser storage)
 const DICT_KEY = "srpski-recnik-words";
 function dictLoad() { try { return JSON.parse(localStorage.getItem(DICT_KEY) || "[]"); } catch (e) { return []; } }
@@ -378,9 +418,9 @@ function breakdownHTML(text, over) {
     const sr = i > 0 && t.w[0] !== t.w[0].toLowerCase() ? t.w : t.w.toLowerCase();
     return { sr, ru: t.ru, ex };
   });
-  return `<div class="parse"><span class="parse-h">Разбор · нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
+  return `<div class="parse"><span class="parse-h">Разбор · <span class="st">подчёркнута</span> ударная гласная · нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
     const saved = t.ru && dictHas(lastParse[i].sr, t.ru);
-    return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${esc(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
+    return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${stressHTML(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
   }).join("") + `</div></div>`;
 }
 document.addEventListener("click", e => {

@@ -127,6 +127,7 @@ details.tools[open] summary { margin-bottom: 10px; }
 .back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
 .back:hover { text-decoration: underline; text-underline-offset: 3px; }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.st { color: var(--accent); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
 </head>
@@ -135,7 +136,7 @@ details.tools[open] summary { margin-bottom: 10px; }
   <header>
     <a class="back noconv" href="index.html">← Все тесты</a>
     <h1>Мой <em>словарь</em></h1>
-    <p class="sub">Собирай слова из тестов и тренируй их. Слова, на которых ошибаешься, попадаются чаще.</p>
+    <p class="sub">Собирай слова из тестов и тренируй их. <span class="st">Подчёркнута</span> ударная гласная. Слова, на которых ошибаешься, попадаются чаще.</p>
     <div class="row" style="margin-top:8px">
       <div class="seg" role="group" aria-label="Алфавит">
         <button id="sc-mix" aria-pressed="true">Вперемешку</button>
@@ -212,6 +213,45 @@ try { const v = localStorage.getItem("recnik-script"); if (v === "lat" || v === 
 let practiceScript = null; // set per question during practice in mixed mode
 const S = t => ((practiceScript || (script === "cyr" ? "cyr" : "lat")) === "cyr" ? toCyr(t) : t);
 
+// Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
+// so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
+const STRESS = {
+  radimo: 1, učimo: 1, gledamo: 1, gledaju: 1, jedete: 1, imamo: 1, imate: 1, živimo: 1, govori: 1, govorite: 1, govore: 1,
+  plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 1, pijete: 1, volimo: 1, možete: 1,
+  nećemo: 1, zovete: 1, dođete: 1, iznajmim: 2, odakle: 1, veoma: 1, mesečno: 1, nedeljom: 1, previše: 1, online: 0,
+  zajedno: 1, rusije: 1, beograda: 2, beogradu: 2, srbiju: 1, peterburga: 1, mihail: 1, petrović: 1, komšija: 1, komšije: 1,
+  agenta: 2, nekretnine: 3, stanari: 2, kirija: 1, kiriju: 1, gospodin: 2, računi: 1, račune: 1, selidbu: 2, kupatilo: 2,
+  prijatelji: 1, ključevi: 1, ugovor: 1, turisti: 2, internet: 1, kuhinji: 1, septembra: 1, televiziju: 3, doručak: 1,
+  roditelji: 1, adresu: 1, majstora: 1, slatkiša: 2, karticom: 1, poruke: 1, početkom: 1, meseca: 1, ponedeljak: 2,
+  ljubazni: 1, zatvorena: 1, zauzeti: 1, bolesno: 1, zadovoljni: 1, uključen: 1, slobodan: 1, umoran: 1, umorna: 1,
+  zadovoljan: 1, zadovoljna: 1, siguran: 1, sigurna: 1, engleski: 1
+};
+// Clitics and short function words carry no stress of their own
+const UNSTRESSED = new Set(["sam", "si", "je", "smo", "ste", "su", "li", "se", "i", "u", "na", "iz", "od", "do", "za", "sa", "kod", "da", "ne", "ali", "mi", "nam", "nas"]);
+function nuclei(w) {
+  const V = c => c && "aeiou".includes(c), out = [];
+  for (let i = 0; i < w.length; i++) {
+    const c = w[i];
+    if (V(c)) out.push(i);
+    else if (c === "r" && !V(w[i - 1]) && !V(w[i + 1]) && w[i + 1] && /\p{L}/u.test(w[i + 1])) out.push(i);
+  }
+  return out;
+}
+function stressHTML(text, conv) {
+  conv = conv || (x => x);
+  return String(text).split(/(\s+|\/)/).map(tok => {
+    const m = tok.match(/^([^\p{L}]*)(\p{L}+)([^\p{L}]*)$/u);
+    if (!m) return conv(esc(tok));
+    const [, pre, word, post] = m, low = word.toLowerCase();
+    let n = 0;
+    const nu = nuclei(low);
+    if (!UNSTRESSED.has(low)) n = low in STRESS ? STRESS[low] : (nu.length && nu.length <= 2 ? 1 : 0);
+    if (!n || !nu[n - 1] && nu[n - 1] !== 0) return conv(esc(tok));
+    const at = nu[n - 1];
+    return conv(esc(pre + word.slice(0, at))) + `<span class="st">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1) + post));
+  }).join("");
+}
+
 // ---------- storage: this browser; the quizzes on the same site write to the same key ----------
 let WORDS = [];
 let store = null;
@@ -254,7 +294,7 @@ function renderList() {
   if (!items.length) { list.innerHTML = `<p class="muted">Ничего не нашлось.</p>`; return; }
   list.innerHTML = items.map(w => `
     <div class="word">
-      <div><div class="w-sr">${esc(S(w.sr))}</div><div class="w-ru">${esc(w.ru)}</div></div>
+      <div><div class="w-sr">${stressHTML(w.sr, S)}</div><div class="w-ru">${esc(w.ru)}</div></div>
       <div class="w-side">${dots(w.box)}<button class="del" type="button" data-id="${esc(w.id)}">Удалить</button></div>
       ${w.ex ? `<div class="w-ex">${esc(S(w.ex))}</div>` : ""}
     </div>`).join("");
@@ -435,12 +475,12 @@ function renderQ() {
   let body;
   if (q.m === "sr2ru") {
     q.opts = optionsFor(q);
-    body = `<div class="card"><span class="tag">Что это значит?</span><p class="prompt">${esc(S(q.w.sr))}</p></div>
+    body = `<div class="card"><span class="tag">Что это значит?</span><p class="prompt">${stressHTML(q.w.sr, S)}</p></div>
       <div class="opts">${q.opts.map((o, k) => `<button class="opt" data-k="${k}"><span class="k">${k + 1}</span>${esc(o.ru)}</button>`).join("")}</div>`;
   } else if (q.m === "ru2sr") {
     q.opts = optionsFor(q);
     body = `<div class="card"><span class="tag">Как это по-сербски?</span><p class="prompt">${esc(q.w.ru)}</p></div>
-      <div class="opts">${q.opts.map((o, k) => `<button class="opt" data-k="${k}"><span class="k">${k + 1}</span>${esc(S(o.sr))}</button>`).join("")}</div>`;
+      <div class="opts">${q.opts.map((o, k) => `<button class="opt" data-k="${k}"><span class="k">${k + 1}</span>${stressHTML(o.sr, S)}</button>`).join("")}</div>`;
   } else {
     body = `<form class="card" id="tf" autocomplete="off"><span class="tag">Напиши по-сербски</span><p class="prompt">${esc(q.w.ru)}</p>
       <div class="row"><input type="text" id="t-in" aria-label="Ответ по-сербски" placeholder="латиницей или кириллицей" style="flex:1;min-width:180px" autocapitalize="off" spellcheck="false"><button class="btn" type="submit">Проверить</button></div>
@@ -464,7 +504,7 @@ function choose(k) {
   let extra = "";
   if (!ok) {
     const o = q.opts[k];
-    extra = `<p>Ты выбрал: <span class="pair">${esc(S(o.sr))}</span> = ${esc(o.ru)}.</p>`;
+    extra = `<p>Ты выбрал: <span class="pair">${stressHTML(o.sr, S)}</span> = ${esc(o.ru)}.</p>`;
   }
   finishQ(ok, extra);
 }
@@ -475,7 +515,7 @@ function checkTyped(val) {
   if (!a) return;
   let ok = false, extra = "";
   if (a === want) ok = true;
-  else if (strip(a) === strip(want)) { ok = true; extra = `<p>Засчитано, но с диакритикой правильно так: <span class="pair">${esc(S(q.w.sr))}</span>.</p>`; }
+  else if (strip(a) === strip(want)) { ok = true; extra = `<p>Засчитано, но с диакритикой правильно так: <span class="pair">${stressHTML(q.w.sr, S)}</span>.</p>`; }
   else extra = `<p>Ты написал: <span class="pair">${esc(val.trim())}</span>.</p>`;
   document.getElementById("t-in").disabled = true;
   document.querySelector("#tf .btn").disabled = true;
@@ -493,7 +533,7 @@ function finishQ(ok, extra) {
   document.getElementById("t-fb").innerHTML = `
     <div class="fb ${ok ? "ok" : "no"}" style="margin-top:12px">
       <h3>${ok ? "Верно!" : "Не совсем"}</h3>
-      <p><span class="pair">${esc(S(w.sr))}</span> = ${esc(w.ru)}</p>
+      <p><span class="pair">${stressHTML(w.sr, S)}</span> = ${esc(w.ru)}</p>
       ${extra}${w.ex ? `<p class="muted"><i>${esc(S(w.ex))}</i></p>` : ""}
     </div>
     <div class="row" style="margin-top:12px"><button class="btn" type="button" id="t-next">${last ? "Результат" : "Дальше"}</button></div>`;
@@ -510,7 +550,7 @@ function renderResult() {
   document.getElementById("train").innerHTML = `
     <div class="card">
       <p class="score">${st.ok}<small> из ${total} · ${pct}%</small></p>
-      ${misses.length ? `<h2>Повтори эти слова</h2><ul class="miss">${misses.map(w => `<li><span class="pair">${esc(S(w.sr))}</span> = ${esc(w.ru)}</li>`).join("")}</ul>` : `<p>Все слова верно. Отлично!</p>`}
+      ${misses.length ? `<h2>Повтори эти слова</h2><ul class="miss">${misses.map(w => `<li><span class="pair">${stressHTML(w.sr, S)}</span> = ${esc(w.ru)}</li>`).join("")}</ul>` : `<p>Все слова верно. Отлично!</p>`}
       <div class="row">
         ${misses.length ? `<button class="btn" type="button" id="t-retry">Повторить ошибки (${misses.length})</button>` : ""}
         <button class="btn ${misses.length ? "ghost" : ""}" type="button" id="t-again">Новая тренировка</button>
