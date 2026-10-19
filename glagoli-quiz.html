@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Глаголы по лицам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column, a card for the current sentence, choice buttons below, feedback panel under them */
+:root {
+  --bg: #f4f6f3;
+  --surface: #ffffff;
+  --ink: #1c2620;
+  --muted: #5d6b62;
+  --line: #d8e0da;
+  --accent: #2c6a4f;
+  --accent-soft: #e2efe8;
+  --good: #1d7a4a;
+  --good-soft: #e2f3ea;
+  --bad: #b23a2a;
+  --bad-soft: #f9e6e2;
+  --display: "Alegreya", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --pos-v: #b4532a; --pos-p: #2f5fb3; --pos-n: #8a6410; --pos-a: #7b3fa0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111713; --surface: #19211c; --ink: #e5ece7; --muted: #9aa9a0; --line: #2b3830;
+    --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111713; --surface: #19211c; --ink: #e5ece7; --muted: #9aa9a0; --line: #2b3830;
+  --accent: #7cc4a0; --accent-soft: #1c2f25; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 { font-family: var(--display); font-size: 2rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.sub { color: var(--muted); margin: 0; }
+.script { display: inline-flex; flex-wrap: wrap; border: 1.5px solid var(--accent); border-radius: 999px; overflow: hidden; align-self: flex-start; margin-top: 8px; }
+.script button { font: inherit; font-weight: 700; padding: 6px 16px; border: none; background: transparent; color: var(--accent); cursor: pointer; }
+.script button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.script button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+
+details.cheat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.cheat summary { cursor: pointer; padding: 12px 16px; font-weight: 700; }
+details.cheat summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.cheat-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.cheat-body h4 { margin: 4px 0 0; font-size: 0.95rem; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 5px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
+td.f { font-family: var(--mono); font-size: 0.92rem; }
+td.f b { color: var(--accent); font-weight: 500; }
+.rules { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.rules b { font-family: var(--mono); font-weight: 500; }
+
+.bar { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; background: var(--accent); width: 0; transition: width .25s ease; }
+.tags { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.stage-tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+.verb-tag { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.sentence { font-family: var(--display); font-size: 1.65rem; line-height: 1.3; margin: 0; text-wrap: balance; }
+.hint { font-family: var(--body); font-size: 1rem; color: var(--muted); font-weight: 500; }
+.blank { display: inline-block; min-width: 2.4em; border-bottom: 2px solid var(--accent); text-align: center; color: var(--accent); }
+.blank.ok { color: var(--good); border-color: var(--good); }
+.blank.no { color: var(--bad); border-color: var(--bad); }
+.ru { color: var(--muted); margin: 0; }
+
+.opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.opt {
+  font: inherit; font-family: var(--mono); font-size: 1.05rem; padding: 12px 10px; border-radius: 10px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; justify-content: center; min-width: 0;
+}
+.opt .k { font-size: 0.75rem; color: var(--muted); }
+.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt:disabled { cursor: default; }
+.opt.ok { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+.opt.no { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+
+.fb { border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.fb.ok { background: var(--good-soft); }
+.fb.no { background: var(--bad-soft); }
+.fb h3 { margin: 0; font-size: 1.05rem; }
+.fb.ok h3 { color: var(--good); }
+.fb.no h3 { color: var(--bad); }
+.fb p { margin: 0; }
+.fb code { font-family: var(--mono); font-size: 0.92em; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { font: inherit; font-weight: 700; padding: 11px 20px; border-radius: 10px; border: none; cursor: pointer; background: var(--accent); color: var(--surface); }
+.btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.keys { font-size: 0.85rem; color: var(--muted); }
+
+.result { display: flex; flex-direction: column; gap: 14px; }
+.score { font-family: var(--display); font-size: 3rem; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.score small { font-size: 1.2rem; color: var(--muted); font-family: var(--body); }
+.miss { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.miss li { border-left: 3px solid var(--bad); padding: 4px 0 4px 12px; }
+.miss .s { font-family: var(--display); font-size: 1.15rem; }
+.miss .s b { color: var(--good); }
+.miss .r { color: var(--muted); font-size: 0.92rem; }
+.tr { color: var(--muted); font-size: 0.9em; }
+.parse { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.parse-h { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: flex; flex-direction: column; padding: 6px 10px; border-radius: 8px; background: var(--bg); border-top: 3px solid var(--line); min-width: 0; }
+.chip .cw { font-family: var(--display); font-size: 1.1rem; line-height: 1.2; }
+.chip .cp { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.chip .cr { font-size: 0.85rem; color: var(--muted); }
+.chip.pos-V { border-top-color: var(--pos-v); } .chip.pos-V .cp { color: var(--pos-v); }
+.chip.pos-P { border-top-color: var(--pos-p); } .chip.pos-P .cp { color: var(--pos-p); }
+.chip.pos-N { border-top-color: var(--pos-n); } .chip.pos-N .cp { color: var(--pos-n); }
+.chip.pos-A { border-top-color: var(--pos-a); } .chip.pos-A .cp { color: var(--pos-a); }
+.ab { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ab-c { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--bg); min-width: 0; }
+.ab-l, .ab-y { font-family: var(--display); font-size: 1.25rem; line-height: 1.2; }
+.ab-l { color: var(--accent); }
+.ab-r { font-size: 0.85rem; color: var(--muted); }
+header details.cheat { margin-top: 10px; }
+@media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Глаголы <em>по лицам</em></h1>
+    <p class="sub">В каждом предложении пропущено либо окончание глагола, либо местоимение. 19 частых глаголов, настоящее время.</p>
+    <div class="script noconv" role="group" aria-label="Алфавит">
+      <button id="sc-mix" aria-pressed="true">Вперемешку</button>
+      <button id="sc-lat" aria-pressed="false">Latinica</button>
+      <button id="sc-cyr" aria-pressed="false">Ћирилица</button>
+    </div>
+    <details class="cheat noconv" id="abc">
+      <summary>Алфавит: латиница, кириллица и как звучит</summary>
+      <div class="cheat-body">
+        <p class="sub">30 букв, одна буква = один звук. Порядок как в сербской азбуке.</p>
+        <div class="ab"><div class="ab-c"><span class="ab-l">A a</span><span class="ab-y">А а</span><span class="ab-r">а</span></div><div class="ab-c"><span class="ab-l">B b</span><span class="ab-y">Б б</span><span class="ab-r">б</span></div><div class="ab-c"><span class="ab-l">V v</span><span class="ab-y">В в</span><span class="ab-r">в</span></div><div class="ab-c"><span class="ab-l">G g</span><span class="ab-y">Г г</span><span class="ab-r">г</span></div><div class="ab-c"><span class="ab-l">D d</span><span class="ab-y">Д д</span><span class="ab-r">д</span></div><div class="ab-c"><span class="ab-l">Đ đ</span><span class="ab-y">Ђ ђ</span><span class="ab-r">мягкое «дь», почти «джь»</span></div><div class="ab-c"><span class="ab-l">E e</span><span class="ab-y">Е е</span><span class="ab-r">э</span></div><div class="ab-c"><span class="ab-l">Ž ž</span><span class="ab-y">Ж ж</span><span class="ab-r">ж</span></div><div class="ab-c"><span class="ab-l">Z z</span><span class="ab-y">З з</span><span class="ab-r">з</span></div><div class="ab-c"><span class="ab-l">I i</span><span class="ab-y">И и</span><span class="ab-r">и</span></div><div class="ab-c"><span class="ab-l">J j</span><span class="ab-y">Ј ј</span><span class="ab-r">й</span></div><div class="ab-c"><span class="ab-l">K k</span><span class="ab-y">К к</span><span class="ab-r">к</span></div><div class="ab-c"><span class="ab-l">L l</span><span class="ab-y">Л л</span><span class="ab-r">л</span></div><div class="ab-c"><span class="ab-l">Lj lj</span><span class="ab-y">Љ љ</span><span class="ab-r">ль</span></div><div class="ab-c"><span class="ab-l">M m</span><span class="ab-y">М м</span><span class="ab-r">м</span></div><div class="ab-c"><span class="ab-l">N n</span><span class="ab-y">Н н</span><span class="ab-r">н</span></div><div class="ab-c"><span class="ab-l">Nj nj</span><span class="ab-y">Њ њ</span><span class="ab-r">нь</span></div><div class="ab-c"><span class="ab-l">O o</span><span class="ab-y">О о</span><span class="ab-r">о (не «а»)</span></div><div class="ab-c"><span class="ab-l">P p</span><span class="ab-y">П п</span><span class="ab-r">п</span></div><div class="ab-c"><span class="ab-l">R r</span><span class="ab-y">Р р</span><span class="ab-r">р, бывает гласной: srpski</span></div><div class="ab-c"><span class="ab-l">S s</span><span class="ab-y">С с</span><span class="ab-r">с</span></div><div class="ab-c"><span class="ab-l">T t</span><span class="ab-y">Т т</span><span class="ab-r">т</span></div><div class="ab-c"><span class="ab-l">Ć ć</span><span class="ab-y">Ћ ћ</span><span class="ab-r">мягкое «чь»</span></div><div class="ab-c"><span class="ab-l">U u</span><span class="ab-y">У у</span><span class="ab-r">у</span></div><div class="ab-c"><span class="ab-l">F f</span><span class="ab-y">Ф ф</span><span class="ab-r">ф</span></div><div class="ab-c"><span class="ab-l">H h</span><span class="ab-y">Х х</span><span class="ab-r">х</span></div><div class="ab-c"><span class="ab-l">C c</span><span class="ab-y">Ц ц</span><span class="ab-r">ц</span></div><div class="ab-c"><span class="ab-l">Č č</span><span class="ab-y">Ч ч</span><span class="ab-r">твёрдое «ч»</span></div><div class="ab-c"><span class="ab-l">Dž dž</span><span class="ab-y">Џ џ</span><span class="ab-r">твёрдое «дж»</span></div><div class="ab-c"><span class="ab-l">Š š</span><span class="ab-y">Ш ш</span><span class="ab-r">ш</span></div></div>
+      </div>
+    </details>
+  </header>
+
+  <details class="cheat" id="cheat">
+    <summary>Шпаргалка: три типа окончаний и неправильные глаголы</summary>
+    <div class="cheat-body">
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>на -am</th><th>на -im</th><th>на -em</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">gled<b>am</b></td><td class="f">rad<b>im</b></td><td class="f">jed<b>em</b></td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">gled<b>aš</b></td><td class="f">rad<b>iš</b></td><td class="f">jed<b>eš</b></td></tr>
+            <tr><td>on / ona / ono <span class="tr">(он / она / оно)</span></td><td class="f">gled<b>a</b></td><td class="f">rad<b>i</b></td><td class="f">jed<b>e</b></td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">gled<b>amo</b></td><td class="f">rad<b>imo</b></td><td class="f">jed<b>emo</b></td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">gled<b>ate</b></td><td class="f">rad<b>ite</b></td><td class="f">jed<b>ete</b></td></tr>
+            <tr><td>oni / one / ona <span class="tr">(они: муж. / жен. / ср. род)</span></td><td class="f">gled<b>aju</b></td><td class="f">rad<b>e</b></td><td class="f">jed<b>u</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>oni</b> = они про мужчин или смешанную группу (oni su studenti, ključevi su…). <b>one</b> = они только про женщин или слова женского рода (one su sestre, sobe su…). <b>ona</b> = они про слова среднего рода во мн. числе, в том числе deca (sela su…, deca su… → ona su). Глагол у всех трёх один и тот же.</li>
+        <li><b>-am</b>: gledati, imati, znati, čekati, plaćati.</li>
+        <li><b>-im</b>: raditi, učiti, govoriti, tražiti, a также živeti, voleti (хотя на -eti).</li>
+        <li><b>-em</b>: jesti (jedem), piti (pijem), pisati (pišem), razumeti (razumem, но oni razumeju).</li>
+        <li>Форма «ja» всегда кончается на <b>-m</b>, «mi» на <b>-mo</b>, «vi» на <b>-te</b>. По окончанию видно лицо, поэтому местоимение часто опускают.</li>
+        <li>Отрицание <b>ne</b> пишется отдельно: ne radim, ne znam. Слитно только <b>nemam, neću, nisam</b>.</li>
+      </ul>
+      <h4>Неправильные</h4>
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>moći (мочь)</th><th>hteti (хотеть)</th><th>ići (идти)</th><th>zvati se</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">mogu</td><td class="f">hoću</td><td class="f">idem</td><td class="f">zovem se</td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">možeš</td><td class="f">hoćeš</td><td class="f">ideš</td><td class="f">zoveš se</td></tr>
+            <tr><td>on / ona <span class="tr">(он / она)</span></td><td class="f">može</td><td class="f">hoće</td><td class="f">ide</td><td class="f">zove se</td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">možemo</td><td class="f">hoćemo</td><td class="f">idemo</td><td class="f">zovemo se</td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">možete</td><td class="f">hoćete</td><td class="f">idete</td><td class="f">zovete se</td></tr>
+            <tr><td>oni <span class="tr">(они)</span></td><td class="f">mogu</td><td class="f">hoće</td><td class="f">idu</td><td class="f">zovu se</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <main id="app"></main>
+</div>
+
+<script>
+const CLS = {
+  a: ["am", "aš", "a", "amo", "ate", "aju"],
+  i: ["im", "iš", "i", "imo", "ite", "e"],
+  e: ["em", "eš", "e", "emo", "ete", "u"],
+  eju: ["em", "eš", "e", "emo", "ete", "eju"]
+};
+const PRON = ["ja", "ti", "on", "mi", "vi", "oni"];
+const WHO = ["ja", "ti", "on / ona / ono", "mi", "vi", "oni / one / ona"];
+const RU_P = ["я", "ты", "он/она", "мы", "вы", "они"];
+
+// k: "end" = blank for the ending (stem + ___), "pron" = blank for the pronoun, "full" = irregular verb, pick the whole form
+// v: infinitive, st: stem, c: ending class, pi: person index 0..5 (ja, ti, on, mi, vi, oni)
+const ITEMS = [
+  // окончания
+  { k: "end", v: "raditi", st: "rad", c: "i", pi: 0, t: "Ja rad___ u banci.", ru: "Я работаю в банке." },
+  { k: "end", v: "raditi", st: "rad", c: "i", pi: 3, t: "Mi rad___ od devet do pet.", ru: "Мы работаем с девяти до пяти." },
+  { k: "end", v: "raditi", st: "rad", c: "i", pi: 2, t: "Gde rad___ tvoja žena?", ru: "Где работает твоя жена?" },
+  { k: "end", v: "učiti", st: "uč", c: "i", pi: 0, h: "ja", t: "Uč___ srpski svaki dan.", ru: "Я учу сербский каждый день." },
+  { k: "end", v: "učiti", st: "uč", c: "i", pi: 5, t: "Deca uč___ u školi.", ru: "Дети учатся в школе.", n: "Deca (дети) требует глагол во множественном числе: deca uče." },
+  { k: "end", v: "gledati", st: "gled", c: "a", pi: 3, h: "mi", t: "Sutra gled___ stan u Novom Sadu.", ru: "Завтра мы смотрим квартиру в Нови-Саде." },
+  { k: "end", v: "gledati", st: "gled", c: "a", pi: 5, t: "Oni gled___ televiziju.", ru: "Они смотрят телевизор." },
+  { k: "end", v: "gledati", st: "gled", c: "a", pi: 1, h: "ti", t: "Šta gled___?", ru: "Что ты смотришь?" },
+  { k: "end", v: "jesti", st: "jed", c: "e", pi: 4, h: "vi", t: "Šta jed___ za doručak?", ru: "Что вы едите на завтрак?", n: "jesti меняет основу на jed-: jedem, jedeš, jede…" },
+  { k: "end", v: "jesti", st: "jed", c: "e", pi: 5, t: "Deca jed___ u kuhinji.", ru: "Дети едят на кухне." },
+  { k: "end", v: "imati", st: "im", c: "a", pi: 4, h: "vi", t: "Im___ li parking?", ru: "У вас есть парковка?" },
+  { k: "end", v: "imati", st: "im", c: "a", pi: 2, t: "Stan im___ dve sobe.", ru: "В квартире две комнаты." },
+  { k: "end", v: "imati", st: "im", c: "a", pi: 3, t: "Mi im___ psa.", ru: "У нас есть собака." },
+  { k: "end", v: "živeti", st: "živ", c: "i", pi: 0, h: "ja", t: "Živ___ u Beogradu.", ru: "Я живу в Белграде.", n: "živeti хоть и на -eti, но спрягается на -im: živim, živiš, živi…" },
+  { k: "end", v: "živeti", st: "živ", c: "i", pi: 5, t: "Gde živ___ vaši roditelji?", ru: "Где живут ваши родители?" },
+  { k: "end", v: "govoriti", st: "govor", c: "i", pi: 4, h: "vi", t: "Govor___ li engleski?", ru: "Вы говорите по-английски?" },
+  { k: "end", v: "govoriti", st: "govor", c: "i", pi: 2, t: "Ona govor___ malo ruski.", ru: "Она немного говорит по-русски." },
+  { k: "end", v: "znati", st: "zn", c: "a", pi: 0, h: "ja", t: "Ne zn___ gde je banka.", ru: "Я не знаю, где банк." },
+  { k: "end", v: "plaćati", st: "plać", c: "a", pi: 3, h: "mi", t: "Kiriju plać___ početkom meseca.", ru: "Аренду мы платим в начале месяца." },
+  { k: "end", v: "plaćati", st: "plać", c: "a", pi: 5, t: "Oni plać___ račune online.", ru: "Они оплачивают счета онлайн." },
+  { k: "end", v: "tražiti", st: "traž", c: "i", pi: 3, h: "mi", t: "Traž___ stan sa dve sobe.", ru: "Мы ищем квартиру с двумя комнатами." },
+  { k: "end", v: "razumeti", st: "razum", c: "eju", pi: 0, h: "ja", t: "Ne razum___ dobro srpski.", ru: "Я плохо понимаю по-сербски.", n: "razumeti: razumem, razumeš, razume, razumemo, razumete, razumeju." },
+  { k: "end", v: "razumeti", st: "razum", c: "eju", pi: 5, t: "Oni nas ne razum___.", ru: "Они нас не понимают.", n: "razumeti: razumem, razumeš, razume, razumemo, razumete, razumeju." },
+  { k: "end", v: "piti", st: "pij", c: "e", pi: 4, h: "vi", t: "Šta pij___?", ru: "Что будете пить?", n: "piti меняет основу на pij-: pijem, piješ, pije…" },
+  { k: "end", v: "voleti", st: "vol", c: "i", pi: 0, h: "ja", t: "Vol___ Srbiju.", ru: "Я люблю Сербию.", n: "voleti, как и živeti, спрягается на -im: volim, voliš, voli…" },
+  { k: "end", v: "pisati", st: "piš", c: "e", pi: 2, t: "Gazda nam piš___ poruke.", ru: "Хозяин пишет нам сообщения.", n: "pisati: s меняется на š, и окончания на -em: pišem, pišeš, piše…" },
+
+  // местоимения
+  { k: "pron", v: "raditi", st: "rad", c: "i", pi: 1, t: "Da li ___ radiš danas?", ru: "Ты сегодня работаешь?" },
+  { k: "pron", v: "gledati", st: "gled", c: "a", pi: 5, t: "___ gledaju stan sutra.", ru: "Они смотрят квартиру завтра." },
+  { k: "pron", v: "učiti", st: "uč", c: "i", pi: 3, t: "___ učimo srpski zajedno.", ru: "Мы учим сербский вместе." },
+  { k: "pron", v: "imati", st: "im", c: "a", pi: 4, t: "Da li ___ imate slobodan stan?", ru: "У вас есть свободная квартира?" },
+  { k: "pron", v: "živeti", st: "živ", c: "i", pi: 2, t: "___ živi u centru.", ru: "Он живёт в центре." },
+  { k: "pron", v: "jesti", st: "jed", c: "e", pi: 0, t: "___ ne jedem meso.", ru: "Я не ем мясо." },
+  { k: "pron", v: "plaćati", st: "plać", c: "a", pi: 4, t: "Da li ___ plaćate karticom?", ru: "Вы платите картой?" },
+  { k: "pron", v: "govoriti", st: "govor", c: "i", pi: 5, t: "___ govore srpski i engleski.", ru: "Они говорят по-сербски и по-английски." },
+  { k: "pron", v: "tražiti", st: "traž", c: "i", pi: 0, t: "___ tražim agenta za nekretnine.", ru: "Я ищу агента по недвижимости." },
+  { k: "pron", v: "znati", st: "zn", c: "a", pi: 2, t: "___ zna adresu.", ru: "Он знает адрес." },
+  { k: "pron", v: "čekati", st: "ček", c: "a", pi: 3, t: "___ čekamo majstora.", ru: "Мы ждём мастера." },
+  { k: "pron", v: "jesti", st: "jed", c: "e", pi: 1, t: "___ jedeš previše slatkiša.", ru: "Ты ешь слишком много сладкого." },
+  { k: "pron", v: "razumeti", st: "razum", c: "eju", pi: 5, t: "___ razumeju ruski.", ru: "Они понимают по-русски." },
+  { k: "pron", v: "piti", st: "pij", c: "e", pi: 4, t: "Da li ___ pijete kafu?", ru: "Вы пьёте кофе?" },
+  { k: "pron", v: "voleti", st: "vol", c: "i", pi: 3, t: "___ volimo ovaj kraj.", ru: "Мы любим этот район." },
+
+  // неправильные
+  { k: "full", v: "moći", F: ["mogu", "možeš", "može", "možemo", "možete", "mogu"], pi: 0, h: "ja", t: "Da li ___ da platim karticom?", ru: "Могу я заплатить картой?", n: "moći: g меняется на ž во всех формах, кроме ja и oni: mogu." },
+  { k: "full", v: "moći", F: ["Mogu", "Možeš", "Može", "Možemo", "Možete", "Mogu"], pi: 4, h: "vi", t: "___ li da dođete sutra?", ru: "Можете прийти завтра?", n: "moći: mogu, možeš, može, možemo, možete, mogu." },
+  { k: "full", v: "moći", F: ["mogu", "možeš", "može", "možemo", "možete", "mogu"], pi: 5, t: "Oni ne ___ danas.", ru: "Они сегодня не могут.", n: "Для oni форма такая же, как для ja: mogu." },
+  { k: "full", v: "moći", F: ["mogu", "možeš", "može", "možemo", "možete", "mogu"], pi: 2, t: "Gazda ___ da dođe u ponedeljak.", ru: "Хозяин может прийти в понедельник." },
+  { k: "full", v: "hteti", F: ["Hoću", "Hoćeš", "Hoće", "Hoćemo", "Hoćete", "Hoće"], pi: 0, h: "ja", t: "___ da iznajmim stan.", ru: "Я хочу снять квартиру.", n: "hteti: hoću, hoćeš, hoće, hoćemo, hoćete, hoće. Вежливее сказать želim (хочу, желаю)." },
+  { k: "full", v: "hteti", F: ["hoću", "hoćeš", "hoće", "hoćemo", "hoćete", "hoće"], pi: 1, h: "ti", t: "Šta ___ da piješ?", ru: "Что ты хочешь выпить?" },
+  { k: "full", v: "hteti (ne)", F: ["Neću", "Nećeš", "Neće", "Nećemo", "Nećete", "Neće"], pi: 3, h: "mi", t: "___ da čekamo.", ru: "Мы не хотим ждать.", n: "Отрицание от hteti пишется слитно: neću, nećeš, neće, nećemo, nećete, neće." },
+  { k: "full", v: "ići", F: ["idem", "ideš", "ide", "idemo", "idete", "idu"], pi: 0, h: "ja", t: "Sutra ___ u banku.", ru: "Завтра я иду в банк.", n: "ići: idem, ideš, ide, idemo, idete, idu." },
+  { k: "full", v: "ići", F: ["idem", "ideš", "ide", "idemo", "idete", "idu"], pi: 1, h: "ti", t: "Gde ___?", ru: "Куда ты идёшь?" },
+  { k: "full", v: "ići", F: ["idem", "ideš", "ide", "idemo", "idete", "idu"], pi: 5, t: "Deca ___ u školu peške.", ru: "Дети идут в школу пешком." },
+  { k: "full", v: "imati (ne)", F: ["Nemam", "Nemaš", "Nema", "Nemamo", "Nemate", "Nemaju"], pi: 0, h: "ja", t: "___ račun u ovoj banci.", ru: "У меня нет счёта в этом банке.", n: "Отрицание от imati пишется слитно: nemam. «Ne imam» не бывает." },
+  { k: "full", v: "imati (ne)", F: ["nemam", "nemaš", "nema", "nemamo", "nemate", "nemaju"], pi: 2, t: "Stan ___ lift.", ru: "В доме нет лифта.", n: "Nema также значит «нет» в смысле «отсутствует»: Nema problema." },
+  { k: "full", v: "zvati se", F: ["zovem", "zoveš", "zove", "zovemo", "zovete", "zovu"], pi: 4, h: "vi", t: "Kako se ___?", ru: "Как вас зовут?", n: "zvati меняет основу на zov-: zovem, zoveš, zove, zovemo, zovete, zovu." },
+  { k: "full", v: "zvati se", F: ["Zovem", "Zoveš", "Zove", "Zovemo", "Zovete", "Zovu"], pi: 0, h: "ja", t: "___ se Mihail.", ru: "Меня зовут Михаил." }
+];
+const STAGES = { end: "Окончание", pron: "Кто это?", full: "Неправильный глагол" };
+
+const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "вы", oni: "они" };
+// Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
+const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
+const LEX = {
+  ja: ["P", "я"], ti: ["P", "ты"], on: ["P", "он"], ona: ["P", "она / они (ср. р.)"], ono: ["P", "оно"], mi: ["P", "мы"], vi: ["P", "вы"], oni: ["P", "они"], one: ["P", "они (жен.)"],
+  nas: ["P", "нас"], nam: ["P", "нам"], ništa: ["P", "ничего"], moj: ["P", "мой"], moja: ["P", "моя"], tvoja: ["P", "твоя"], vaše: ["P", "вашего"], vaši: ["P", "ваши"], ovaj: ["P", "этот"], ovoj: ["P", "этом"], svaki: ["P", "каждый"],
+  sam: ["V", "есть (я)"], si: ["V", "есть (ты)"], je: ["V", "есть (он/она/оно)"], smo: ["V", "есть (мы)"], ste: ["V", "есть (вы)"], su: ["V", "есть (они)"],
+  nisam: ["V", "не есть (я)"], nisi: ["V", "не есть (ты)"], nije: ["V", "не есть (он/она)"], nismo: ["V", "не есть (мы)"], niste: ["V", "не есть (вы)"], nisu: ["V", "не есть (они)"],
+  jesam: ["V", "есть, да (я)"], jesi: ["V", "есть (ты), долгая форма"], jeste: ["V", "есть (вы), долгая форма"], jesu: ["V", "есть (они), долгая форма"],
+  radim: ["V", "работаю"], radiš: ["V", "работаешь"], radi: ["V", "работает"], radimo: ["V", "работаем"],
+  učim: ["V", "учу"], uče: ["V", "учатся"], učimo: ["V", "учим"],
+  gledamo: ["V", "смотрим"], gledaš: ["V", "смотришь"], gledaju: ["V", "смотрят"],
+  jedem: ["V", "ем"], jedeš: ["V", "ешь"], jedete: ["V", "едите"], jedu: ["V", "едят"],
+  ima: ["V", "имеет, есть"], imamo: ["V", "имеем, у нас есть"], imate: ["V", "имеете, у вас есть"], nema: ["V", "нет, не имеет"], nemam: ["V", "не имею, у меня нет"],
+  živim: ["V", "живу"], živi: ["V", "живёт"], žive: ["V", "живут"], živimo: ["V", "живём"],
+  govori: ["V", "говорит"], govorite: ["V", "говорите"], govore: ["V", "говорят"],
+  znam: ["V", "знаю"], zna: ["V", "знает"],
+  plaćamo: ["V", "платим"], plaćate: ["V", "платите"], plaćaju: ["V", "платят"], platim: ["V", "заплатить (я)"],
+  tražim: ["V", "ищу"], tražimo: ["V", "ищем"], čekamo: ["V", "ждём"],
+  razumem: ["V", "понимаю"], razumeju: ["V", "понимают"],
+  pijete: ["V", "пьёте"], piješ: ["V", "пить (ты)"], volim: ["V", "люблю"], volimo: ["V", "любим"], piše: ["V", "пишет"],
+  mogu: ["V", "могу / могут"], može: ["V", "может"], možete: ["V", "можете"],
+  hoću: ["V", "хочу"], hoćeš: ["V", "хочешь"], nećemo: ["V", "не хотим"],
+  idem: ["V", "иду"], ideš: ["V", "идёшь"], idu: ["V", "идут"],
+  zovem: ["V", "зову (zovem se = меня зовут)"], zovete: ["V", "зовёте (kako se zovete = как вас зовут)"],
+  dođe: ["V", "прийти (он)"], dođete: ["V", "прийти (вы)"], iznajmim: ["V", "снять в аренду (я)"],
+  se: ["T", "себя, -ся"], li: ["T", "ли (вопрос)"], ne: ["T", "не"],
+  i: ["C", "и"], ali: ["C", "но"],
+  u: ["R", "в"], na: ["R", "на"], iz: ["R", "из"], od: ["R", "от, с"], do: ["R", "до"], za: ["R", "для, на, по"], sa: ["R", "с"], kod: ["R", "у"],
+  gde: ["Q", "где / куда"], šta: ["Q", "что"], kako: ["Q", "как"], odakle: ["Q", "откуда"],
+  danas: ["D", "сегодня"], sutra: ["D", "завтра"], sad: ["D", "сейчас"], sada: ["D", "сейчас"], ovde: ["D", "здесь"], već: ["D", "уже"], još: ["D", "ещё"],
+  dobro: ["D", "хорошо"], veoma: ["D", "очень"], mesečno: ["D", "в месяц"], nedeljom: ["D", "по воскресеньям"], previše: ["D", "слишком много"], peške: ["D", "пешком"], online: ["D", "онлайн"], zajedno: ["D", "вместе"],
+  "450": ["M", "450"], dve: ["M", "две"], devet: ["M", "девять"], pet: ["M", "пять"], prvi: ["M", "первый"],
+  rusije: ["N", "России"], beograda: ["N", "Белграда"], beogradu: ["N", "Белграде"], srbiju: ["N", "Сербию"], sankt: ["N", "Санкт-"], peterburga: ["N", "Петербурга"], sadu: ["N", "Саде"],
+  marko: ["N", "Марко (имя)"], ana: ["N", "Ана (имя)"], mihail: ["N", "Михаил (имя)"], petrović: ["N", "Петрович (фамилия)"], jović: ["N", "Йович (фамилия)"],
+  komšija: ["N", "сосед"], komšije: ["N", "соседи"], vlasnik: ["N", "владелец"], stana: ["N", "квартиры"], stan: ["N", "квартира"], stanom: ["N", "квартирой"], stanu: ["N", "квартире"],
+  agent: ["N", "агент"], agenta: ["N", "агента"], nekretnine: ["N", "недвижимость"], centru: ["N", "центре"], grada: ["N", "города"], stanari: ["N", "жильцы"],
+  kirija: ["N", "аренда"], kiriju: ["N", "аренду"], evra: ["N", "евро"], gospodin: ["N", "господин"], sestre: ["N", "сёстры"],
+  banka: ["N", "банк"], banci: ["N", "банке"], banke: ["N", "банка"], banku: ["N", "банк (куда?)"], računi: ["N", "счета"], račune: ["N", "счета"], račun: ["N", "счёт"],
+  stolu: ["N", "столе"], selidbu: ["N", "переезд"], dete: ["N", "ребёнок"], deca: ["N", "дети"], kupatilo: ["N", "ванная"], prijatelji: ["N", "друзья"],
+  žena: ["N", "жена"], ključevi: ["N", "ключи"], gazde: ["N", "хозяина"], gazda: ["N", "хозяин"], školi: ["N", "школе"], školu: ["N", "школу"],
+  pasoš: ["N", "паспорт"], ugovor: ["N", "договор"], torbi: ["N", "сумке"], klijent: ["N", "клиент"], student: ["N", "студент"], turisti: ["N", "туристы"],
+  internet: ["N", "интернет"], kući: ["N", "дому"], kuće: ["N", "дома (kod kuće = дома)"], kuhinji: ["N", "кухне"], pravu: ["N", "праве (u pravu = прав)"], put: ["N", "раз"], septembra: ["N", "сентября"],
+  televiziju: ["N", "телевизор"], doručak: ["N", "завтрак"], parking: ["N", "парковка"], sobe: ["N", "комнаты"], psa: ["N", "собаку"], roditelji: ["N", "родители"], adresu: ["N", "адрес"],
+  majstora: ["N", "мастера"], slatkiša: ["N", "сладкого"], kraj: ["N", "район"], kafu: ["N", "кофе"], karticom: ["N", "картой"], meso: ["N", "мясо"], poruke: ["N", "сообщения"],
+  početkom: ["N", "в начале"], meseca: ["N", "месяца"], ponedeljak: ["N", "понедельник"], lift: ["N", "лифт"], dan: ["N", "день"],
+  novi: ["A", "новый, новые"], novom: ["A", "Новом"], ljubazni: ["A", "любезные"], zatvorena: ["A", "закрыт(а)"], spremni: ["A", "готовы"], zauzeti: ["A", "заняты"], bolesno: ["A", "больное"],
+  čisto: ["A", "чистое"], zadovoljni: ["A", "довольны"], skup: ["A", "дорогой"], dužni: ["A", "должны"], uključen: ["A", "включён"], slobodan: ["A", "свободный"], umoran: ["A", "уставший"],
+  "zadovoljan/zadovoljna": ["A", "доволен/довольна"], "nov/nova": ["A", "новый/новая"], "kriv/kriva": ["A", "виноват(а)"], "siguran/sigurna": ["A", "уверен(а)"], "spreman/spremna": ["A", "готов(а)"], "umoran/umorna": ["A", "устал(а)"]
+};
+const BITI_F = ["sam", "si", "je", "smo", "ste", "su", "nisam", "nisi", "nije", "nismo", "niste", "nisu"];
+function analyze(text, over) {
+  const toks = text.replace(/<br>/g, " ").split(/[\s.,?!—]+/).filter(w => /\p{L}|\d/u.test(w));
+  const raw = text.replace(/<br>/g, " ");
+  return toks.map((w, i) => {
+    const lw = w.toLowerCase(), prev = (toks[i - 1] || "").toLowerCase(), nxt = (toks[i + 1] || "").toLowerCase();
+    let e = (over && over[lw]) || LEX[lw];
+    if (lw === "da") e = nxt === "li" ? ["T", "da li = вопрос «ли»"] : new RegExp("\\bda,", "i").test(raw) ? ["T", "да"] : ["C", "чтобы, что (связка)"];
+    if (lw === "malo") e = BITI_F.includes(prev) ? ["A", "маленькая(-ое)"] : ["D", "немного"];
+    if (["ruski", "srpski", "engleski"].includes(lw)) {
+      const ru = { ruski: "русский", srpski: "сербский", engleski: "английский" }[lw];
+      e = toks.slice(0, i).some(t => /^(govor|razum)/i.test(t)) ? ["D", "по-" + ru.slice(0, -2) + "и"] : ["A", ru + " (язык)"];
+    }
+    return { w, pos: e ? e[0] : "", ru: e ? e[1] : "" };
+  });
+}
+function breakdownHTML(text, over) {
+  return `<div class="parse"><span class="parse-h">Разбор</span><div class="chips">` + analyze(text, over).map(t =>
+    `<span class="chip pos-${t.pos}"><span class="cw">${esc(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span></span>`
+  ).join("") + `</div></div>`;
+}
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// regular verbs (endings + pronouns) mixed together first, irregular after
+function build(list) { return [...shuffle(list.filter(x => x.k !== "full")), ...shuffle(list.filter(x => x.k === "full"))]; }
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
+const pronLabel = p => p === "on" ? "on / ona" : p;
+
+function optsOf(q) {
+  if (q.k === "end") return uniq(CLS[q.c]).map(e => "-" + e);
+  if (q.k === "pron") return PRON.map((p, i) => {
+    const lbl = pronLabel(p);
+    return q.t.startsWith("___") ? lbl[0].toUpperCase() + lbl.slice(1) : lbl;
+  });
+  return uniq(q.F);
+}
+function answerOf(q) {
+  const o = optsOf(q);
+  if (q.k === "end") return o.indexOf("-" + CLS[q.c][q.pi]);
+  if (q.k === "pron") return q.pi;
+  return o.indexOf(q.F[q.pi]);
+}
+function fillOf(q) {
+  if (q.k === "end") return CLS[q.c][q.pi];
+  return optsOf(q)[answerOf(q)];
+}
+const formOf = (q, pi) => q.st + CLS[q.c][pi];
+function personsOfFull(q, form) { return q.F.map((f, i) => f === form ? WHO[i] : null).filter(Boolean).join(" и "); }
+
+const app = document.getElementById("app");
+let queue = [], idx = 0, correct = 0, misses = [], answered = false, qScript = [], inResult = false;
+
+function makeRuns(n) {
+  const out = [];
+  let s = Math.random() < 0.5 ? "lat" : "cyr";
+  while (out.length < n) {
+    const len = 1 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < len && out.length < n; i++) out.push(s);
+    s = s === "lat" ? "cyr" : "lat";
+  }
+  return out;
+}
+
+function start(list) {
+  queue = build(list); qScript = makeRuns(queue.length); idx = 0; correct = 0; misses = []; inResult = false; render();
+}
+
+function render() {
+  answered = false;
+  const q = queue[idx];
+  const opts = optsOf(q);
+  const sentence = (q.h ? `<span class="hint">(${q.h} = ${HRU[q.h] || ""})</span> ` : "") + q.t.split("___").map(esc).join('<span class="blank" id="blank">&nbsp;</span>');
+  app.innerHTML = `
+    <div class="bar"><span>${idx + 1} / ${queue.length}</span><div class="track"><div class="fill" style="width:${idx / queue.length * 100}%"></div></div><span>✓ ${correct}</span></div>
+    <section class="card" aria-live="polite">
+      <div class="tags"><span class="stage-tag">${STAGES[q.k]}</span><span class="verb-tag">${q.v}</span></div>
+      <p class="sentence">${sentence}</p>
+      <p class="ru" id="ru" hidden>${q.ru}</p>
+      <div id="parse"></div>
+    </section>
+    <div class="opts" id="opts">
+      ${opts.map((o, i) => `<button class="opt" id="opt${i}" data-i="${i}"><span class="k">${i + 1}</span>${esc(o)}</button>`).join("")}
+    </div>
+    <div id="fb"></div>
+    <p class="keys noconv">Можно отвечать цифрами на клавиатуре, Enter переходит дальше.</p>`;
+  app.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => choose(+b.dataset.i)));
+  applyScript(app);
+}
+
+function explain(q, i) {
+  const opts = optsOf(q), right = answerOf(q);
+  let h = "";
+  if (q.k === "end") {
+    const ci = CLS[q.c].indexOf(opts[i].slice(1));
+    h += `<p>Правильно: <code>${esc(formOf(q, q.pi))}</code>, потому что тут <b>${WHO[q.pi]}</b>.</p>`;
+    h += `<p><code>${esc(formOf(q, ci))}</code> это форма для «${CLS[q.c].map((e, j) => e === CLS[q.c][ci] ? WHO[j] : null).filter(Boolean).join(" и ")}».</p>`;
+    if (!q.n) h += `<p>${q.v}: ${CLS[q.c].map((e, j) => q.st + e).join(", ")}.</p>`;
+  } else if (q.k === "pron") {
+    const verb = formOf(q, q.pi);
+    h += `<p>Правильно: <code>${esc(opts[right])}</code>. Окончание <b>-${CLS[q.c][q.pi]}</b> в <code>${esc(verb)}</code> бывает только у «${RU_P[q.pi]}».</p>`;
+    h += `<p>Для «${PRON[i]}» было бы <code>${esc(formOf(q, i))}</code>.</p>`;
+  } else {
+    h += `<p>Правильно: <code>${esc(opts[right])}</code> (${WHO[q.pi]}).</p>`;
+    h += `<p><code>${esc(opts[i])}</code> это форма для «${personsOfFull(q, opts[i])}».</p>`;
+  }
+  if (q.n) h += `<p>${q.n}</p>`;
+  return h;
+}
+
+function choose(i) {
+  if (answered) return;
+  answered = true;
+  const q = queue[idx];
+  const right = answerOf(q);
+  const ok = i === right;
+  app.querySelectorAll(".opt").forEach(b => b.disabled = true);
+  document.getElementById("opt" + right).classList.add("ok");
+  if (!ok) document.getElementById("opt" + i).classList.add("no");
+  const bl = document.getElementById("blank");
+  bl.textContent = fillOf(q); bl.classList.add(ok ? "ok" : "no");
+  document.getElementById("ru").hidden = false;
+  const full = q.t.replace("___", fillOf(q));
+  document.getElementById("parse").innerHTML = breakdownHTML(full, q.g);
+  let html;
+  if (ok) { correct++; html = `<div class="fb ok"><h3>Верно!</h3></div>`; }
+  else { misses.push(q); html = `<div class="fb no"><h3>Не совсем</h3>${explain(q, i)}</div>`; }
+  const last = idx === queue.length - 1;
+  document.getElementById("fb").innerHTML = html +
+    `<div class="actions" style="margin-top:12px"><button class="btn" id="next">${last ? "Результат" : "Дальше"}</button></div>`;
+  const nb = document.getElementById("next");
+  nb.addEventListener("click", next);
+  applyScript(app);
+  nb.focus();
+}
+
+function next() { if (idx < queue.length - 1) { idx++; render(); } else finish(); }
+
+function plain(q) {
+  const s = q.t.split("___").map(esc).join(`<b>${esc(fillOf(q))}</b>`);
+  return `<span class="s">${q.h ? `(${q.h}) ` : ""}${s}</span><div class="r">${q.ru}</div>`;
+}
+
+function finish() {
+  const total = queue.length, pct = Math.round(correct / total * 100);
+  const msg = pct === 100 ? "Без единой ошибки. Отлично!" : pct >= 85 ? "Очень хорошо. Повтори ошибки, и будет идеально." : pct >= 60 ? "Неплохо. Прогони ошибки ещё раз." : "Загляни в шпаргалку сверху и попробуй ещё раз.";
+  app.innerHTML = `
+    <section class="card result">
+      <p class="score">${correct}<small> из ${total} · ${pct}%</small></p>
+      <p style="margin:0">${msg}</p>
+      ${misses.length ? `<h3 style="margin:0">Где были ошибки</h3><ul class="miss">${misses.map(q => `<li>${plain(q)}</li>`).join("")}</ul>` : ""}
+      <div class="actions">
+        ${misses.length ? `<button class="btn" id="retry">Повторить ошибки (${misses.length})</button>` : ""}
+        <button class="btn ${misses.length ? "ghost" : ""}" id="again">Пройти заново</button>
+      </div>
+    </section>`;
+  const m = misses.slice();
+  const r = document.getElementById("retry");
+  if (r) { r.addEventListener("click", () => start(m)); r.focus(); }
+  document.getElementById("again").addEventListener("click", () => start(ITEMS));
+  inResult = true;
+  applyScript(app);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("summary, .script")) return;
+  if (!queue.length || !document.getElementById("opts")) return;
+  const n = parseInt(e.key, 10);
+  if (!answered && n >= 1) {
+    if (document.getElementById("opt" + (n - 1))) { e.preventDefault(); choose(n - 1); }
+  } else if (answered && e.key === "Enter" && document.activeElement?.id !== "next") {
+    e.preventDefault(); next();
+  }
+});
+
+// Latin -> Serbian Cyrillic. Russian text has no Latin letters, so whole text nodes can be converted safely.
+const L2C = { lj: "љ", nj: "њ", "dž": "џ", a: "а", b: "б", c: "ц", "č": "ч", "ć": "ћ", d: "д", "đ": "ђ", e: "е", f: "ф", g: "г", h: "х", i: "и", j: "ј", k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", r: "р", s: "с", "š": "ш", t: "т", u: "у", v: "в", z: "з", "ž": "ж" };
+function toCyr(s) {
+  return s.replace(/lj|nj|dž|[a-zčćđšž]/gi, m => {
+    const c = L2C[m.toLowerCase()];
+    if (!c) return m;
+    return m[0] === m[0].toUpperCase() && m[0] !== m[0].toLowerCase() ? c.toUpperCase() : c;
+  });
+}
+let script = "mix";
+try { const v = localStorage.getItem("glagoli-script"); if (v === "lat" || v === "cyr") script = v; } catch (e) {}
+const base = () => script === "mix" ? "lat" : script;
+const cur = () => script !== "mix" ? script : (inResult ? "lat" : qScript[idx]);
+function applyScript(root, s = cur()) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest(".noconv") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
+  let n;
+  while ((n = w.nextNode())) {
+    if (n._lat === undefined) n._lat = n.nodeValue;
+    n.nodeValue = s === "cyr" ? toCyr(n._lat) : n._lat;
+  }
+}
+function setScript(s) {
+  script = s;
+  try { localStorage.setItem("glagoli-script", s); } catch (e) {}
+  ["mix", "lat", "cyr"].forEach(k => document.getElementById("sc-" + k).setAttribute("aria-pressed", s === k));
+  applyScript(document.querySelector(".wrap"), base());
+  applyScript(app);
+}
+["mix", "lat", "cyr"].forEach(k => document.getElementById("sc-" + k).addEventListener("click", () => setScript(k)));
+
+start(ITEMS);
+setScript(script);
+</script>
+
+</body>
+</html>
