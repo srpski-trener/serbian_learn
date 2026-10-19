@@ -170,9 +170,11 @@ header details.cheat { margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 
 section.rule th, section.rule td { white-space: normal; padding: 6px 8px; }
-.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0; margin: -10px 0; border-bottom: 1px solid var(--line); }
+.toc a { background: var(--bg); }
+.toc a.on { background: var(--accent); color: var(--surface); }
 .toc a { font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; color: var(--accent); text-decoration: none; }
-section.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 12px; }
+section.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: var(--toc-h, 120px); }
 section.rule h2 { font-family: var(--display); font-size: 1.5rem; margin: 0; }
 section.rule .go { font-weight: 700; color: var(--accent); }
 .qa { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -352,5 +354,17 @@ section.rule .go { font-weight: 700; color: var(--accent); }
     <a class="go" href="pisanje-quiz.html">Потренироваться →</a>
   </section>
 </div>
+<script>
+const toc = document.querySelector(".toc"), links = [...toc.querySelectorAll("a")];
+const setH = () => document.documentElement.style.setProperty("--toc-h", toc.offsetHeight + 12 + "px");
+setH(); addEventListener("resize", setH);
+function mark() {
+  const y = toc.offsetHeight + 20;
+  let cur = null;
+  for (const a of links) { const s = document.querySelector(a.getAttribute("href")); if (s.getBoundingClientRect().top <= y) cur = a; }
+  links.forEach(a => a.classList.toggle("on", a === cur));
+}
+addEventListener("scroll", mark, { passive: true }); mark();
+</script>
 </body>
 </html>
