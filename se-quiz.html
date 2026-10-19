@@ -155,6 +155,11 @@ header details.cheat { margin-top: 10px; }
 .st::after { content: ""; position: absolute; left: 50%; top: 0.02em; width: 0.17em; height: 0.26em; margin-left: -0.05em; background: var(--stress); clip-path: polygon(62% 0, 100% 14%, 22% 100%, 6% 92%); pointer-events: none; }
 .st.up::after { top: -0.1em; }
 .nw { white-space: nowrap; }
+.topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.topics button { font: inherit; font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
+.topics button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.topics button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.topics .n { font-weight: 400; opacity: 0.75; margin-left: 6px; }
 .nostress .st::after { display: none; }
 .nostress .st-note { display: none; }
 .stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
@@ -213,6 +218,7 @@ header details.cheat { margin-top: 10px; }
     </div>
   </details>
 
+  <div class="topics noconv" id="topics" role="group" aria-label="Тема"></div>
   <main id="app"></main>
 </div>
 
@@ -227,6 +233,8 @@ const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  jesmo: ["V", "есть (мы), долгая форма"], srbije: ["N", "Сербии"], naši: ["P", "наши"], tvoji: ["P", "твои"], to: ["P", "это"], plaćeni: ["A", "оплачены"], skupa: ["A", "дорогая"],
+  problem: ["N", "проблема"], muž: ["N", "муж"], cenu: ["N", "цену"], koliko: ["Q", "сколько"],
   zoveš: ["V", "зовёшь (kako se zoveš = как тебя зовут)"], zove: ["V", "зовёт (zove se = его/её зовут)"], zovemo: ["V", "зовём"], zovu: ["V", "зовут"],
   budim: ["V", "бужу (budim se = просыпаюсь)"], budiš: ["V", "будишь (budiš se = просыпаешься)"], budi: ["V", "будит (budi se = просыпается)"], budite: ["V", "будите"],
   tušira: ["V", "моет под душем (tušira se = принимает душ)"], selimo: ["V", "перевозим (selimo se = переезжаем)"], sele: ["V", "перевозят (sele se = переезжают)"], seli: ["V", "перевозит (seli se = переезжает)"], seliš: ["V", "перевозишь (seliš se = переезжаешь)"],
@@ -312,6 +320,7 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  plaćeni: 1, koliko: 1, srbije: 1,
   subotu: 1, subotom: 1, useljavamo: 2, iznajmljuju: 2, odmaram: 1, odmaraš: 1, odmara: 1, odmaramo: 1, odmarate: 1, odmaraju: 1, sećaju: 1, osećam: 1, osećaš: 1, oseća: 1, osećate: 1,
   igraju: 1, igramo: 1, počinje: 1, završava: 2, ostajem: 1, vraćamo: 1, vraćate: 1, vraćaju: 1, vidimo: 1, vidite: 1, izdaje: 1, budite: 1,
   dvorištu: 1, selidbe: 2, nekretninama: 3, unapred: 1, vikendom: 1, stanovi: 1, tušira: 0, dešava: 0, useljavaju: 0, useljavate: 0, useljava: 0, gotovinom: 0,
@@ -457,7 +466,7 @@ function resumeOffer() {
     queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
     idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
   });
-  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(ITEMS); });
+  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(pool()); });
   document.getElementById("resume").focus();
   return true;
 }
@@ -549,7 +558,7 @@ function finish() {
   const m = misses.slice();
   const r = document.getElementById("retry");
   if (r) { r.addEventListener("click", () => start(m)); r.focus(); }
-  document.getElementById("again").addEventListener("click", () => start(ITEMS));
+  document.getElementById("again").addEventListener("click", () => start(pool()));
   inResult = true;
   applyScript(app);
 }
@@ -600,7 +609,26 @@ document.addEventListener("keydown", e => {
   }
 });
 
-if (!resumeOffer()) start(ITEMS);
+// Topic picker: all questions in stage order, or one stage only
+const TOPIC_KEY = PROG_KEY + "-topic";
+const stageName = s => typeof STAGES !== "undefined" ? STAGES[s] : s;
+const TOPICS = [...new Set(ITEMS.map(x => x.s))];
+let topic = "all";
+try { const v = localStorage.getItem(TOPIC_KEY); if (v && TOPICS.map(String).includes(v)) topic = v; } catch (e) {}
+function pool() { return topic === "all" ? ITEMS : ITEMS.filter(x => String(x.s) === topic); }
+function renderTopics() {
+  const el = document.getElementById("topics");
+  if (typeof NO_TOPICS !== "undefined") { el.hidden = true; return; }
+  el.innerHTML = [["all", "Все темы", ITEMS.length], ...TOPICS.map(s => [String(s), stageName(s), ITEMS.filter(x => x.s === s).length])]
+    .map(([k, l, n]) => `<button type="button" data-t="${k}" aria-pressed="${k === topic}">${l}<span class="n">${n}</span></button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    topic = b.dataset.t;
+    try { localStorage.setItem(TOPIC_KEY, topic); } catch (e) {}
+    renderTopics(); clearProg(); start(pool());
+  }));
+}
+renderTopics();
+if (!resumeOffer()) start(pool());
 // Stress marks on/off, shared by all pages of the site
 let stressOn = true;
 try { stressOn = localStorage.getItem("srpski-stress") !== "off"; } catch (e) {}

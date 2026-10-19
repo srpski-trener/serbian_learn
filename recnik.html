@@ -226,6 +226,7 @@ const S = t => ((practiceScript || (script === "cyr" ? "cyr" : "lat")) === "cyr"
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  plaćeni: 1, koliko: 1, srbije: 1,
   subotu: 1, subotom: 1, useljavamo: 2, iznajmljuju: 2, odmaram: 1, odmaraš: 1, odmara: 1, odmaramo: 1, odmarate: 1, odmaraju: 1, sećaju: 1, osećam: 1, osećaš: 1, oseća: 1, osećate: 1,
   igraju: 1, igramo: 1, počinje: 1, završava: 2, ostajem: 1, vraćamo: 1, vraćate: 1, vraćaju: 1, vidimo: 1, vidite: 1, izdaje: 1, budite: 1,
   dvorištu: 1, selidbe: 2, nekretninama: 3, unapred: 1, vikendom: 1, stanovi: 1, tušira: 0, dešava: 0, useljavaju: 0, useljavate: 0, useljava: 0, gotovinom: 0,
@@ -343,6 +344,8 @@ document.getElementById("q").addEventListener("input", renderList);
 
 // Only words that exist in the quizzes can be imported
 const LEX = {
+  jesmo: ["V", "есть (мы), долгая форма"], srbije: ["N", "Сербии"], naši: ["P", "наши"], tvoji: ["P", "твои"], to: ["P", "это"], plaćeni: ["A", "оплачены"], skupa: ["A", "дорогая"],
+  problem: ["N", "проблема"], muž: ["N", "муж"], cenu: ["N", "цену"], koliko: ["Q", "сколько"],
   zoveš: ["V", "зовёшь (kako se zoveš = как тебя зовут)"], zove: ["V", "зовёт (zove se = его/её зовут)"], zovemo: ["V", "зовём"], zovu: ["V", "зовут"],
   budim: ["V", "бужу (budim se = просыпаюсь)"], budiš: ["V", "будишь (budiš se = просыпаешься)"], budi: ["V", "будит (budi se = просыпается)"], budite: ["V", "будите"],
   tušira: ["V", "моет под душем (tušira se = принимает душ)"], selimo: ["V", "перевозим (selimo se = переезжаем)"], sele: ["V", "перевозят (sele se = переезжают)"], seli: ["V", "перевозит (seli se = переезжает)"], seliš: ["V", "перевозишь (seliš se = переезжаешь)"],

@@ -155,6 +155,11 @@ header details.cheat { margin-top: 10px; }
 .st::after { content: ""; position: absolute; left: 50%; top: 0.02em; width: 0.17em; height: 0.26em; margin-left: -0.05em; background: var(--stress); clip-path: polygon(62% 0, 100% 14%, 22% 100%, 6% 92%); pointer-events: none; }
 .st.up::after { top: -0.1em; }
 .nw { white-space: nowrap; }
+.topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.topics button { font: inherit; font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
+.topics button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.topics button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.topics .n { font-weight: 400; opacity: 0.75; margin-left: 6px; }
 .nostress .st::after { display: none; }
 .nostress .st-note { display: none; }
 .stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
@@ -169,7 +174,7 @@ header details.cheat { margin-top: 10px; }
   <header>
     <a class="back noconv" href="index.html">← Все тесты</a>
     <h1>Глагол <em>biti</em> в настоящем</h1>
-    <p class="sub">Вставь нужную форму. Если ошибёшься, будет объяснение. Порядок вопросов каждый раз новый.</p>
+    <p class="sub">Вставь нужную форму. Можно пройти все темы подряд или выбрать одну: утверждение, отрицание, вопросы, порядок слов. Если ошибёшься, будет объяснение.</p>
     <div class="script noconv" role="group" aria-label="Алфавит">
       <button id="sc-mix" aria-pressed="true">Вперемешку</button>
       <button id="sc-lat" aria-pressed="false">Latinica</button>
@@ -213,6 +218,7 @@ header details.cheat { margin-top: 10px; }
     </div>
   </details>
 
+  <div class="topics noconv" id="topics" role="group" aria-label="Тема"></div>
   <main id="app"></main>
 </div>
 
@@ -276,6 +282,21 @@ const ITEMS = [
   { s: 2, t: "Oni ___ kod kuće.", a: "nisu", o: NEG, p: "oni", ru: "Их нет дома.", n: NEG_NOTE },
   { s: 2, t: "Internet ___ uključen u kiriju.", a: "nije", o: NEG, p: "internet (= on)", ru: "Интернет не включён в аренду.", n: NEG_NOTE },
   { s: 2, h: "ja", t: "___ siguran/sigurna.", a: "nisam", o: NEG, p: "ja", ru: "Я не уверен(а).", n: "В отличие от sam, отрицательная форма может стоять первой: Nisam siguran." },
+  { s: 2, t: "On ___ ovde.", a: "nije", o: NEG, p: "on", ru: "Его здесь нет.", n: NEG_NOTE },
+  { s: 2, t: "Ona ___ iz Srbije.", a: "nije", o: NEG, p: "ona", ru: "Она не из Сербии.", n: NEG_NOTE },
+  { s: 2, t: "Mi ___ spremni.", a: "nismo", o: NEG, p: "mi", ru: "Мы не готовы.", n: NEG_NOTE },
+  { s: 2, t: "Vi ___ u pravu.", a: "niste", o: NEG, p: "vi", ru: "Вы не правы.", n: NEG_NOTE },
+  { s: 2, t: "Oni ___ naši komšije.", a: "nisu", o: NEG, p: "oni", ru: "Они не наши соседи.", n: NEG_NOTE },
+  { s: 2, t: "Stan ___ slobodan.", a: "nije", o: NEG, p: "stan (= on)", ru: "Квартира не свободна.", n: NEG_NOTE },
+  { s: 2, t: "Ja ___ student, ja radim.", a: "nisam", o: NEG, p: "ja", ru: "Я не студент, я работаю.", n: NEG_NOTE },
+  { s: 2, t: "Ti ___ moj gazda.", a: "nisi", o: NEG, p: "ti", ru: "Ты не мой хозяин.", n: NEG_NOTE },
+  { s: 2, t: "Računi ___ plaćeni.", a: "nisu", o: NEG, p: "računi (= oni)", ru: "Счета не оплачены.", n: "Računi во множественном числе (= oni), значит nisu." },
+  { s: 2, t: "Kupatilo ___ čisto.", a: "nije", o: NEG, p: "kupatilo (= ono)", ru: "Ванная не чистая.", n: NEG_NOTE },
+  { s: 2, t: "Deca ___ u školi.", a: "nisu", o: NEG, p: "deca (= ona, мн. число)", ru: "Дети не в школе.", n: "Deca по-сербски множественное число среднего рода (= ona), поэтому nisu." },
+  { s: 2, t: "Mi danas ___ zauzeti.", a: "nismo", o: NEG, p: "mi", ru: "Мы сегодня не заняты.", n: NEG_NOTE },
+  { s: 2, t: "Kirija ___ skupa.", a: "nije", o: ["nije", "ne je", "nisu", "nisam"], p: "kirija (= ona)", ru: "Аренда не дорогая.", n: "«Ne je» в сербском не бывает: отрицание всегда слитное, nije." },
+  { s: 2, h: "to", t: "___ problem!", a: "Nije", o: ["Nije", "Nisam", "Ne je", "Nisu"], p: "to (= ono)", ru: "Не проблема!", n: "Nije problem! = Без проблем! Отрицательная форма может стоять первой." },
+  { s: 2, t: "Moj muž ___ kod kuće.", a: "nije", o: NEG, p: "muž (= on)", ru: "Моего мужа нет дома.", n: NEG_NOTE },
 
   // --- stage 3: вопросы и короткие ответы ---
   { s: 3, t: "Da li ___ ti iz Rusije?", a: "si", p: "ti", ru: "Ты из России?", n: "Вопрос через da li: Da li + короткая форма. Da li si…? Da li ste…?" },
@@ -285,6 +306,22 @@ const ITEMS = [
   { s: 3, h: "vi", t: "___ li zadovoljni stanom?", a: "Jeste", o: ["Jeste", "Ste", "Jesi", "Jesmo"], p: "vi", ru: "Вы довольны квартирой?", n: "Для vi долгая форма jeste: Jeste li zadovoljni?" },
   { s: 3, t: "— Da li ste vi gospodin Jović?<br>— Da, ___.", a: "jesam", o: ["jesam", "sam", "jeste", "je"], p: "ja", ru: "— Вы господин Йович? — Да, я.", n: "Короткий ответ «да» даётся долгой формой: Da, jesam. Одно «sam» стоять не может, ему нужно слово перед собой." },
   { s: 3, t: "— Jesi li spreman/spremna?<br>— Ne, ___.", a: "nisam", o: NEG, p: "ja", ru: "— Ты готов(а)? — Нет, не готов(а).", n: "Отрицательный короткий ответ: Ne, nisam." },
+  { s: 3, t: "Da li ___ oni tvoji roditelji?", a: "su", p: "oni", ru: "Это твои родители?", n: "Da li + короткая форма: Da li su…?" },
+  { s: 3, h: "vi", t: "Da li ___ ovde prvi put?", a: "ste", p: "vi", ru: "Вы здесь впервые?", n: "Da li ste…? Местоимение vi можно опустить." },
+  { s: 3, t: "Da li ___ internet uključen u cenu?", a: "je", p: "internet (= on)", ru: "Интернет включён в цену?", n: "Полезный вопрос хозяину: Da li je internet uključen u cenu?" },
+  { s: 3, h: "ti", t: "___ li spreman/spremna?", a: "Jesi", o: ["Jesi", "Si", "Jeste", "Jesam"], p: "ti", ru: "Ты готов(а)?", n: "Вопрос без da li: долгая форма + li. Jesi li…?" },
+  { s: 3, t: "___ li vi iz Beograda?", a: "Jeste", o: ["Jeste", "Ste", "Jesmo", "Jesu"], p: "vi", ru: "Вы из Белграда?", n: "Для vi долгая форма jeste: Jeste li…?" },
+  { s: 3, t: "___ li mi spremni?", a: "Jesmo", o: ["Jesmo", "Smo", "Jeste", "Jesu"], p: "mi", ru: "Мы готовы?", n: "Для mi долгая форма jesmo: Jesmo li…?" },
+  { s: 3, t: "— Da li si iz Rusije?<br>— Da, ___.", a: "jesam", o: ["jesam", "sam", "jesi", "si"], p: "ja", ru: "— Ты из России? — Да.", n: "Короткий ответ «да» даётся долгой формой: Da, jesam." },
+  { s: 3, t: "— Da li ste zadovoljni?<br>— Da, ___.", a: "jesmo", o: ["jesmo", "smo", "jeste", "jesu"], p: "mi", ru: "— Вы довольны? — Да, довольны.", n: "Отвечаем за себя и тех, кто рядом: mi → jesmo." },
+  { s: 3, t: "— Da li je stan slobodan?<br>— Ne, ___.", a: "nije", o: NEG, p: "stan (= on)", ru: "— Квартира свободна? — Нет.", n: "Отрицательный короткий ответ: Ne, nije." },
+  { s: 3, t: "— Jesu li računi plaćeni?<br>— Da, ___.", a: "jesu", o: ["jesu", "su", "jeste", "je"], p: "računi (= oni)", ru: "— Счета оплачены? — Да.", n: "Da, jesu. Одно «su» в ответе стоять не может." },
+  { s: 3, t: "— Jeste li vi agent?<br>— Ne, ___.", a: "nisam", o: NEG, p: "ja", ru: "— Вы агент? — Нет.", n: "Спрашивают одного человека на «вы», а отвечаешь ты за себя: Ne, nisam." },
+  { s: 3, t: "Gde ___ ključevi?", a: "su", p: "ključevi (= oni)", ru: "Где ключи?", n: "После вопросительного слова (gde, šta, kako) короткая форма идёт сразу за ним: Gde su…?" },
+  { s: 3, h: "ti", t: "Odakle ___?", a: "si", p: "ti", ru: "Откуда ты?", n: "Odakle si? Ответ: Iz Rusije sam." },
+  { s: 3, h: "vi", t: "Kako ___?", a: "ste", p: "vi", ru: "Как вы? (как дела?)", n: "Kako ste? вежливо, Kako si? на «ты»." },
+  { s: 3, t: "Šta ___ to?", a: "je", p: "to (= ono)", ru: "Что это?", n: "Šta je to? Короткая форма сразу после вопросительного слова." },
+  { s: 3, t: "Koliko ___ kirija?", a: "je", p: "kirija (= ona)", ru: "Сколько стоит аренда?", n: "Koliko je kirija? = сколько стоит аренда? Самый частый вопрос при поиске квартиры." },
 
   // --- stage 4: порядок слов ---
   { s: 4, k: "pick", ru: "Я из России.", o: ["Ja sam iz Rusije.", "Sam ja iz Rusije.", "Ja iz Rusije."], ai: 0, n: "Глагол нельзя пропускать, как в русском («Ja iz Rusije» неверно), а короткая форма sam не может стоять первой." },
@@ -300,6 +337,8 @@ const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  jesmo: ["V", "есть (мы), долгая форма"], srbije: ["N", "Сербии"], naši: ["P", "наши"], tvoji: ["P", "твои"], to: ["P", "это"], plaćeni: ["A", "оплачены"], skupa: ["A", "дорогая"],
+  problem: ["N", "проблема"], muž: ["N", "муж"], cenu: ["N", "цену"], koliko: ["Q", "сколько"],
   zoveš: ["V", "зовёшь (kako se zoveš = как тебя зовут)"], zove: ["V", "зовёт (zove se = его/её зовут)"], zovemo: ["V", "зовём"], zovu: ["V", "зовут"],
   budim: ["V", "бужу (budim se = просыпаюсь)"], budiš: ["V", "будишь (budiš se = просыпаешься)"], budi: ["V", "будит (budi se = просыпается)"], budite: ["V", "будите"],
   tušira: ["V", "моет под душем (tušira se = принимает душ)"], selimo: ["V", "перевозим (selimo se = переезжаем)"], sele: ["V", "перевозят (sele se = переезжают)"], seli: ["V", "перевозит (seli se = переезжает)"], seliš: ["V", "перевозишь (seliš se = переезжаешь)"],
@@ -385,6 +424,7 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  plaćeni: 1, koliko: 1, srbije: 1,
   subotu: 1, subotom: 1, useljavamo: 2, iznajmljuju: 2, odmaram: 1, odmaraš: 1, odmara: 1, odmaramo: 1, odmarate: 1, odmaraju: 1, sećaju: 1, osećam: 1, osećaš: 1, oseća: 1, osećate: 1,
   igraju: 1, igramo: 1, počinje: 1, završava: 2, ostajem: 1, vraćamo: 1, vraćate: 1, vraćaju: 1, vidimo: 1, vidite: 1, izdaje: 1, budite: 1,
   dvorištu: 1, selidbe: 2, nekretninama: 3, unapred: 1, vikendom: 1, stanovi: 1, tušira: 0, dešava: 0, useljavaju: 0, useljavate: 0, useljava: 0, gotovinom: 0,
@@ -527,7 +567,7 @@ function resumeOffer() {
     queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
     idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
   });
-  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(ITEMS); });
+  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(pool()); });
   document.getElementById("resume").focus();
   return true;
 }
@@ -628,7 +668,7 @@ function finish() {
   const m = misses.slice();
   const r = document.getElementById("retry");
   if (r) { r.addEventListener("click", () => start(m)); r.focus(); }
-  document.getElementById("again").addEventListener("click", () => start(ITEMS));
+  document.getElementById("again").addEventListener("click", () => start(pool()));
   inResult = true;
   applyScript(app);
 }
@@ -679,7 +719,26 @@ document.addEventListener("keydown", e => {
   }
 });
 
-if (!resumeOffer()) start(ITEMS);
+// Topic picker: all questions in stage order, or one stage only
+const TOPIC_KEY = PROG_KEY + "-topic";
+const stageName = s => typeof STAGES !== "undefined" ? STAGES[s] : s;
+const TOPICS = [...new Set(ITEMS.map(x => x.s))];
+let topic = "all";
+try { const v = localStorage.getItem(TOPIC_KEY); if (v && TOPICS.map(String).includes(v)) topic = v; } catch (e) {}
+function pool() { return topic === "all" ? ITEMS : ITEMS.filter(x => String(x.s) === topic); }
+function renderTopics() {
+  const el = document.getElementById("topics");
+  if (typeof NO_TOPICS !== "undefined") { el.hidden = true; return; }
+  el.innerHTML = [["all", "Все темы", ITEMS.length], ...TOPICS.map(s => [String(s), stageName(s), ITEMS.filter(x => x.s === s).length])]
+    .map(([k, l, n]) => `<button type="button" data-t="${k}" aria-pressed="${k === topic}">${l}<span class="n">${n}</span></button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    topic = b.dataset.t;
+    try { localStorage.setItem(TOPIC_KEY, topic); } catch (e) {}
+    renderTopics(); clearProg(); start(pool());
+  }));
+}
+renderTopics();
+if (!resumeOffer()) start(pool());
 // Stress marks on/off, shared by all pages of the site
 let stressOn = true;
 try { stressOn = localStorage.getItem("srpski-stress") !== "off"; } catch (e) {}
