@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Правила сербского</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column, a card for the current sentence, choice buttons below, feedback panel under them */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #1b2433;
+  --muted: #5c6878;
+  --line: #d9dfe8;
+  --accent: #1f4e8c;
+  --accent-soft: #e3ecf8;
+  --good: #1d7a4a;
+  --good-soft: #e2f3ea;
+  --bad: #b23a2a;
+  --stress: #d4231b;
+  --bad-soft: #f9e6e2;
+  --display: "Alegreya", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --pos-v: #b4532a; --pos-p: #2f5fb3; --pos-n: #8a6410; --pos-a: #7b3fa0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161e; --surface: #1a212c; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3645;
+    --accent: #7fa8e6; --accent-soft: #1f2d42; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161e; --surface: #1a212c; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3645;
+  --accent: #7fa8e6; --accent-soft: #1f2d42; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 { font-family: var(--display); font-size: 2rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.sub { color: var(--muted); margin: 0; }
+
+details.cheat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.cheat summary { cursor: pointer; padding: 12px 16px; font-weight: 700; }
+details.cheat summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.cheat-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
+td.f { font-family: var(--mono); font-size: 0.95rem; color: var(--accent); }
+.rules { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.rules b { font-family: var(--mono); font-weight: 500; }
+
+.bar { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; background: var(--accent); width: 0; transition: width .25s ease; }
+.stage-tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.sentence { font-family: var(--display); font-size: 1.65rem; line-height: 1.3; margin: 0; text-wrap: balance; }
+.hint { font-family: var(--body); font-size: 1rem; color: var(--muted); font-weight: 500; }
+.blank { display: inline-block; min-width: 3.2em; border-bottom: 2px solid var(--accent); text-align: center; color: var(--accent); }
+.blank.ok { color: var(--good); border-color: var(--good); }
+.blank.no { color: var(--bad); border-color: var(--bad); }
+.ru { color: var(--muted); margin: 0; }
+.ru[hidden] { display: none; }
+
+.opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.opts.wide { grid-template-columns: 1fr; }
+.opt {
+  font: inherit; font-family: var(--mono); font-size: 1.05rem; padding: 12px 10px; border-radius: 10px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; justify-content: center; min-width: 0;
+}
+.opts.wide .opt { justify-content: flex-start; font-family: var(--body); font-size: 1.1rem; text-align: left; }
+.opt .k { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); }
+.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt:disabled { cursor: default; }
+.opt.ok { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+.opt.no { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+
+.fb { border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.fb.ok { background: var(--good-soft); }
+.fb.no { background: var(--bad-soft); }
+.fb h3 { margin: 0; font-size: 1.05rem; }
+.fb.ok h3 { color: var(--good); }
+.fb.no h3 { color: var(--bad); }
+.fb p { margin: 0; }
+.fb code { font-family: var(--mono); font-size: 0.92em; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  font: inherit; font-weight: 700; padding: 11px 20px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--accent); color: var(--surface);
+}
+.btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.keys { font-size: 0.85rem; color: var(--muted); }
+
+.result { display: flex; flex-direction: column; gap: 14px; }
+.score { font-family: var(--display); font-size: 3rem; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.score small { font-size: 1.2rem; color: var(--muted); font-family: var(--body); }
+.miss { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.miss li { border-left: 3px solid var(--bad); padding: 4px 0 4px 12px; }
+.miss .s { font-family: var(--display); font-size: 1.15rem; }
+.miss .s b { color: var(--good); }
+.miss .r { color: var(--muted); font-size: 0.92rem; }
+.script { display: inline-flex; border: 1.5px solid var(--accent); border-radius: 999px; overflow: hidden; align-self: flex-start; margin-top: 8px; }
+.script button { font: inherit; font-weight: 700; padding: 6px 16px; border: none; background: transparent; color: var(--accent); cursor: pointer; }
+.script button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.script button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+.tr { color: var(--muted); font-size: 0.9em; }
+.parse { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.parse-h { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: flex; flex-direction: column; padding: 6px 10px; border-radius: 8px; background: var(--bg); border-top: 3px solid var(--line); min-width: 0; }
+.chip .cw { font-family: var(--display); font-size: 1.1rem; line-height: 1.2; }
+.chip .cp { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.chip .cr { font-size: 0.85rem; color: var(--muted); }
+.chip.pos-V { border-top-color: var(--pos-v); } .chip.pos-V .cp { color: var(--pos-v); }
+.chip.pos-P { border-top-color: var(--pos-p); } .chip.pos-P .cp { color: var(--pos-p); }
+.chip.pos-N { border-top-color: var(--pos-n); } .chip.pos-N .cp { color: var(--pos-n); }
+.chip.pos-A { border-top-color: var(--pos-a); } .chip.pos-A .cp { color: var(--pos-a); }
+.ab { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ab-c { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--bg); min-width: 0; }
+.ab-l, .ab-y { font-family: var(--display); font-size: 1.25rem; line-height: 1.2; }
+.ab-l { color: var(--accent); }
+.ab-r { font-size: 0.85rem; color: var(--muted); }
+header details.cheat { margin-top: 10px; }
+.chip { font: inherit; color: inherit; text-align: left; border: none; cursor: pointer; }
+.chip:hover:not(:disabled) { background: var(--accent-soft); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip:disabled { cursor: default; }
+.chip .cs { font-size: 0.72rem; color: var(--accent); font-weight: 700; }
+.chip.saved .cs { color: var(--good); }
+.parse-h a { color: var(--accent); }
+.back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
+.back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.st { position: relative; display: inline-block; line-height: 1; }
+.st::after { content: ""; position: absolute; left: 50%; top: 0.02em; width: 0.17em; height: 0.26em; margin-left: -0.05em; background: var(--stress); clip-path: polygon(62% 0, 100% 14%, 22% 100%, 6% 92%); pointer-events: none; }
+.st.up::after { top: -0.17em; }
+.st.i::after { top: -0.27em; }
+.st.i.cy::after { top: 0.02em; }
+.nw { white-space: nowrap; }
+.topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.topics button { font: inherit; font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
+.topics button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.topics button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.topics .n { font-weight: 400; opacity: 0.75; margin-left: 6px; }
+.nostress .st::after { display: none; }
+.nostress .st-note { display: none; }
+.stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
+.stress-tg[aria-pressed="true"] { background: var(--stress); color: #fff; }
+.stress-tg:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+section.rule th, section.rule td { white-space: normal; padding: 6px 8px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; color: var(--accent); text-decoration: none; }
+section.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 12px; }
+section.rule h2 { font-family: var(--display); font-size: 1.5rem; margin: 0; }
+section.rule .go { font-weight: 700; color: var(--accent); }
+.qa { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 8px; }
+.qa h4, .qa p { margin: 0; }
+.qa b { font-family: var(--mono); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="index.html">← Все тесты</a>
+    <h1>Правила <em>сербского</em></h1>
+    <p class="sub">Все шпаргалки из тестов на одной странице, и разборы вопросов, которые возникали по ходу.</p>
+  </header>
+  <nav class="toc"><a href="#biti">Глагол biti (быть)</a><a href="#glagoli">Глаголы по лицам</a><a href="#se">Возвратные глаголы с se</a><a href="#red">Порядок слов</a><a href="#brojevi">Числа, даты и деньги</a><a href="#pisanje">Правописание</a></nav>
+  <section class="rule" id="biti">
+    <h2>Глагол biti (быть)</h2>
+    <div class="tbl">
+        <table>
+          <thead><tr><th>Кто</th><th>Короткая</th><th>Не</th><th>Долгая (вопрос, ответ)</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">sam</td><td class="f">nisam</td><td class="f">jesam</td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">si</td><td class="f">nisi</td><td class="f">jesi</td></tr>
+            <tr><td>on / ona / ono <span class="tr">(он / она / оно)</span></td><td class="f">je</td><td class="f">nije</td><td class="f">jeste</td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">smo</td><td class="f">nismo</td><td class="f">jesmo</td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">ste</td><td class="f">niste</td><td class="f">jeste</td></tr>
+            <tr><td>oni / one / ona <span class="tr">(они: муж. / жен. / ср. род)</span></td><td class="f">su</td><td class="f">nisu</td><td class="f">jesu</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>oni</b> = они про мужчин или смешанную группу (oni su studenti, ključevi su…). <b>one</b> = они только про женщин или слова женского рода (one su sestre, sobe su…). <b>ona</b> = они про слова среднего рода во мн. числе, в том числе deca (sela su…, deca su… → ona su). Глагол у всех трёх один и тот же.</li>
+        <li>В отличие от русского, «быть» в настоящем <b>нельзя пропускать</b>: не «Ja student», а «Ja sam student».</li>
+        <li>Короткая форма <b>никогда не стоит первой</b>. Она встаёт на второе место: <b>Ja sam</b> student, Student <b>sam</b>, Već <b>smo</b> ovde.</li>
+        <li>Местоимение часто опускают: <b>Iz Rusije sam.</b> Форма сама показывает, кто.</li>
+        <li>Отрицание пишется слитно: <b>nisam, nisi, nije</b>… «Ne sam» не бывает. Отрицание может стоять первым.</li>
+        <li>Вопрос: <b>Da li si…?</b> или <b>Jesi li…?</b> (долгая форма + li). Короткий ответ: <b>Jesam.</b> / <b>Nisam.</b></li>
+        <li>Vi как вежливое «Вы» к одному человеку тоже требует <b>ste</b>.</li>
+      </ul><div class="qa"><h4>Почему «Drago mi je», и почему je в конце?</h4>
+<p><b>je</b> здесь «есть» от biti (форма для он/она/оно). Дословно: «приятно мне есть». В русском «есть» опускают («мне приятно»), а в сербском biti в настоящем пропускать нельзя. Лица нет, поэтому форма как для «оно»: je.</p>
+<p>Почему в конце: <b>mi</b> (мне) и <b>je</b> оба короткие слова. Они встают вторыми, сразу после первого слова <b>Drago</b>, и между собой идут в строгом порядке: сначала «кому» (mi), а je всегда последним. Поэтому Drago + mi + je.</p>
+<p>Так же: <b>Drago mu je</b> (ему приятно), <b>Drago nam je</b> (нам приятно), <b>Hladno mi je</b> (мне холодно), <b>Žao mi je</b> (мне жаль).</p></div>
+    <a class="go" href="biti-quiz.html">Потренироваться →</a>
+  </section>
+  <section class="rule" id="glagoli">
+    <h2>Глаголы по лицам</h2>
+    <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>на -am</th><th>на -im</th><th>на -em</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">gled<b>am</b></td><td class="f">rad<b>im</b></td><td class="f">jed<b>em</b></td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">gled<b>aš</b></td><td class="f">rad<b>iš</b></td><td class="f">jed<b>eš</b></td></tr>
+            <tr><td>on / ona / ono <span class="tr">(он / она / оно)</span></td><td class="f">gled<b>a</b></td><td class="f">rad<b>i</b></td><td class="f">jed<b>e</b></td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">gled<b>amo</b></td><td class="f">rad<b>imo</b></td><td class="f">jed<b>emo</b></td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">gled<b>ate</b></td><td class="f">rad<b>ite</b></td><td class="f">jed<b>ete</b></td></tr>
+            <tr><td>oni / one / ona <span class="tr">(они: муж. / жен. / ср. род)</span></td><td class="f">gled<b>aju</b></td><td class="f">rad<b>e</b></td><td class="f">jed<b>u</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>oni</b> = они про мужчин или смешанную группу (oni su studenti, ključevi su…). <b>one</b> = они только про женщин или слова женского рода (one su sestre, sobe su…). <b>ona</b> = они про слова среднего рода во мн. числе, в том числе deca (sela su…, deca su… → ona su). Глагол у всех трёх один и тот же.</li>
+        <li><b>-am</b>: gledati, imati, znati, čekati, plaćati.</li>
+        <li><b>-im</b>: raditi, učiti, govoriti, tražiti, a также živeti, voleti (хотя на -eti).</li>
+        <li><b>-em</b>: jesti (jedem), piti (pijem), pisati (pišem), razumeti (razumem, но oni razumeju).</li>
+        <li>Форма «ja» всегда кончается на <b>-m</b>, «mi» на <b>-mo</b>, «vi» на <b>-te</b>. По окончанию видно лицо, поэтому местоимение часто опускают.</li>
+        <li>Отрицание <b>ne</b> пишется отдельно: ne radim, ne znam. Слитно только <b>nemam, neću, nisam</b>.</li>
+      </ul>
+      <h4>Неправильные</h4>
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>moći (мочь)</th><th>hteti (хотеть)</th><th>ići (идти)</th><th>zvati se</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">mogu</td><td class="f">hoću</td><td class="f">idem</td><td class="f">zovem se</td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">možeš</td><td class="f">hoćeš</td><td class="f">ideš</td><td class="f">zoveš se</td></tr>
+            <tr><td>on / ona <span class="tr">(он / она)</span></td><td class="f">može</td><td class="f">hoće</td><td class="f">ide</td><td class="f">zove se</td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">možemo</td><td class="f">hoćemo</td><td class="f">idemo</td><td class="f">zovemo se</td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">možete</td><td class="f">hoćete</td><td class="f">idete</td><td class="f">zovete se</td></tr>
+            <tr><td>oni <span class="tr">(они)</span></td><td class="f">mogu</td><td class="f">hoće</td><td class="f">idu</td><td class="f">zovu se</td></tr>
+          </tbody>
+        </table>
+      </div><div class="qa"><h4>Почему «oni rade», а не «radju»?</h4>
+<p>Смотри на форму «ja» (или «on»): по ней видно, к какому из трёх типов относится глагол, и это решает, как будет «oni».</p>
+<div class="tbl"><table><thead><tr><th>Тип</th><th>ja</th><th>on / ona</th><th>oni</th></tr></thead><tbody>
+<tr><td>на -am</td><td class="f">gledam</td><td class="f">gleda</td><td class="f">gled<b>aju</b></td></tr>
+<tr><td>на -im</td><td class="f">radim</td><td class="f">radi</td><td class="f">rad<b>e</b></td></tr>
+<tr><td>на -em</td><td class="f">jedem</td><td class="f">jede</td><td class="f">jed<b>u</b></td></tr>
+</tbody></table></div>
+<p>raditi: ja radim, on radi, значит тип на -im, и «oni» кончается на <b>-e</b>: oni rade, govore, uče. «-ju» в -aju бывает только у глаголов на -am: gledaju, znaju, imaju. Русское «работают» тут сбивает: окончание «-ют» в сербский не переносится.</p></div>
+    <a class="go" href="glagoli-quiz.html">Потренироваться →</a>
+  </section>
+  <section class="rule" id="se">
+    <h2>Возвратные глаголы с se</h2>
+    <div class="tbl">
+        <table>
+          <thead><tr><th>Кто</th><th>zvati se</th><th>buditi se</th></tr></thead>
+          <tbody>
+            <tr><td>ja <span class="tr">(я)</span></td><td class="f">zovem se</td><td class="f">budim se</td></tr>
+            <tr><td>ti <span class="tr">(ты)</span></td><td class="f">zoveš se</td><td class="f">budiš se</td></tr>
+            <tr><td>on / ona / ono <span class="tr">(он / она / оно)</span></td><td class="f">zove se</td><td class="f">budi se</td></tr>
+            <tr><td>mi <span class="tr">(мы)</span></td><td class="f">zovemo se</td><td class="f">budimo se</td></tr>
+            <tr><td>vi <span class="tr">(вы)</span></td><td class="f">zovete se</td><td class="f">budite se</td></tr>
+            <tr><td>oni / one / ona <span class="tr">(они)</span></td><td class="f">zovu se</td><td class="f">bude se</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>se</b> = русское «-ся» или «себя», но в сербском это отдельное слово, и оно одно для всех лиц: ja se, ti se, mi se…</li>
+        <li>se <b>никогда не стоит первым</b>. Оно встаёт на второе место: <b>Zovem se</b> Marko, <b>Ja se</b> zovem Marko, <b>Kako se</b> zoveš?</li>
+        <li>Если рядом короткое mi / ti / mu (мне / тебе / ему), оно идёт раньше: <b>Sviđa mi se</b> stan.</li>
+        <li>С отрицанием: ne прямо перед глаголом, se после: <b>Ne sećam se</b>. «Ne se…» не бывает.</li>
+        <li>Не как в русском. С se: <b>odmarati se</b> (отдыхать), <b>sećati se</b> (помнить), <b>igrati se</b> (играть), <b>dešavati se</b> (происходить). Без se: <b>počinjati</b> (начинаться), <b>ostajati</b> (оставаться).</li>
+        <li>Безличное se: <b>Izdaje se stan</b> (сдаётся квартира), <b>Kako se kaže…?</b> (как сказать…?), <b>Ovde se ne puši</b> (здесь не курят).</li>
+        <li>Частые глаголы с se: zvati se (называться), buditi se (просыпаться), seliti se (переезжать), useljavati se (въезжать), vraćati se (возвращаться), osećati se (чувствовать себя), baviti se (заниматься), nadati se (надеяться), plašiti se (бояться), sviđati se (нравиться).</li>
+      </ul>
+    <a class="go" href="se-quiz.html">Потренироваться →</a>
+  </section>
+  <section class="rule" id="red">
+    <h2>Порядок слов</h2>
+    <ul class="rules">
+        <li>В целом порядок свободный, как в русском. Главное правило одно: <b>короткие слова стоят вторыми</b> и никогда не первыми.</li>
+        <li>Короткие слова: <b>sam, si, je, smo, ste, su</b> (biti), <b>se</b>, <b>mi, ti, mu, joj, nam, vam, im</b> (кому), <b>me, te, ga, je, nas, vas, ih</b> (кого), <b>li</b>.</li>
+        <li>Второе место = после первого слова или первой группы: <b>Ja sam</b> iz Rusije, <b>Iz Rusije sam</b>, <b>Sutra ga</b> zovem.</li>
+        <li>Если коротких слов несколько, они идут цепочкой в таком порядке: <b>li → sam/si/smo/ste/su → mi/ti/mu (кому) → ga/je/ih (кого) → se → je</b>. Например: Da li <b>ti se</b> sviđa? Hladno <b>mi je</b>. Daje <b>mi ga</b>.</li>
+        <li>Вопрос: <b>Da li si…?</b> или глагол + li: <b>Govorite li…?</b></li>
+        <li>Отрицание: <b>ne</b> прямо перед глаголом, короткие слова после глагола: <b>Ne sećam se</b>, <b>Ne sviđa mi se</b>. nisam, nije могут стоять первыми.</li>
+        <li>После <b>da</b> начинается новая часть, и короткое слово встаёт сразу за da: Mislim <b>da je</b> stan slobodan.</li>
+      </ul>
+    <a class="go" href="red-quiz.html">Потренироваться →</a>
+  </section>
+  <section class="rule" id="brojevi">
+    <h2>Числа, даты и деньги</h2>
+    <div class="tbl">
+        <table>
+          <thead><tr><th>Число</th><th>Сколько</th><th>Который (какого?)</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="f">jedan / jedna / jedno</td><td class="f">prvi (prvog)</td></tr>
+            <tr><td>2</td><td class="f">dva / dve</td><td class="f">drugi (drugog)</td></tr>
+            <tr><td>3</td><td class="f">tri</td><td class="f">treći (trećeg)</td></tr>
+            <tr><td>4</td><td class="f">četiri</td><td class="f">četvrti (četvrtog)</td></tr>
+            <tr><td>5</td><td class="f">pet</td><td class="f">peti (petog)</td></tr>
+            <tr><td>6</td><td class="f">šest</td><td class="f">šesti (šestog)</td></tr>
+            <tr><td>7</td><td class="f">sedam</td><td class="f">sedmi (sedmog)</td></tr>
+            <tr><td>8</td><td class="f">osam</td><td class="f">osmi (osmog)</td></tr>
+            <tr><td>9</td><td class="f">devet</td><td class="f">deveti (devetog)</td></tr>
+            <tr><td>10</td><td class="f">deset</td><td class="f">deseti (desetog)</td></tr>
+            <tr><td>11–19</td><td class="f">jedanaest, dvanaest, trinaest, četrnaest, petnaest, šesnaest, sedamnaest, osamnaest, devetnaest</td><td class="f">jedanaesti…</td></tr>
+            <tr><td>20–90</td><td class="f">dvadeset, trideset, četrdeset, pedeset, šezdeset, sedamdeset, osamdeset, devedeset</td><td class="f">dvadeseti (dvadesetog)</td></tr>
+            <tr><td>21</td><td class="f">dvadeset jedan</td><td class="f">dvadeset prvi (dvadeset prvog)</td></tr>
+            <tr><td>100–900</td><td class="f">sto, dvesta, trista, četiristo, petsto, šeststo, sedamsto, osamsto, devetsto</td><td class="f">stoti</td></tr>
+            <tr><td>1000</td><td class="f">hiljadu, dve hiljade, pet hiljada</td><td class="f">hiljaditi</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li>Составные числа пишутся раздельно: <b>dvadeset pet</b>, <b>sto dvadeset tri</b>. Сотни одним словом: <b>petsto</b>.</li>
+        <li>После числа слово меняется почти как в русском. 1 (и 21, 31…): <b>jedan stan</b>. 2, 3, 4 (и 22, 23…): <b>dva stana, dve sobe</b>. 5 и больше, 11–19: <b>pet stanova, pet soba</b>.</li>
+        <li>У частых слов: <b>dan → dva dana, pet dana</b>; <b>godina → dve godine, pet godina</b>; <b>dinar → dva dinara, pet dinara</b>; <b>evro → dva evra, pet evra</b>; <b>sat → dva sata, pet sati</b>.</li>
+        <li>После предлогов число не меняется: <b>od osam do pet</b> (с восьми до пяти), <b>za pet minuta</b> (через пять минут).</li>
+        <li>«Когда?» → порядковое в родительном: <b>dvadeset prvog oktobra</b> (21. oktobra). Меняется только последнее слово.</li>
+        <li>«Какое сегодня число?» → именительный: <b>Danas je dvadeset prvi oktobar.</b></li>
+        <li>Год: <b>1990. godine</b> = hiljadu devetsto devedesete godine (в 1990 году, без предлога). На письме после порядкового числа ставят точку: 21. oktobra, 3. sprat.</li>
+        <li>Деньги: <b>novac</b> (деньги, ед. число: novac je), <b>pare</b> (разговорное, мн. число: pare su, nemam para), <b>plaćanje</b> (оплата), <b>uplata</b> (платёж, поступление), <b>račun</b> (счёт), <b>kartica</b> (карта; karta = билет), <b>gotovina</b> (наличные), <b>kusur</b> (сдача), <b>kurs</b> (курс), <b>provizija</b> (комиссия), <b>uplatnica</b> (квитанция), <b>bankomat</b>, <b>menjačnica</b> (обменник).</li>
+      </ul>
+    <a class="go" href="brojevi-quiz.html">Потренироваться →</a>
+  </section>
+  <section class="rule" id="pisanje">
+    <h2>Правописание</h2>
+    <ul class="rules">
+        <li><b>č</b> твёрдое «ч», <b>ć</b> мягкое «ч». Подсказка: где в русском «ч» или «щ» на месте старого «т» (хотеть → хочу, помощь, ночь), там обычно <b>ć</b>: hoću, pomoć, noć. Но plaćam (плачу деньги) и plačem (плачу слезами) разные слова.</li>
+        <li><b>dž</b> твёрдое «дж» (džep, džem), <b>đ</b> мягкое (rođendan, Đorđe). Писать dj вместо đ неправильно.</li>
+        <li>Пиши, как слышишь: <b>srpski</b> (от Srbija), <b>potpis</b> (pod + pis), <b>besplatan</b> (bez + platan), <b>ispit</b>, <b>teško</b> (от težak), <b>slatka</b> (от sladak), <b>oca</b> (от otac). Исключение: d перед s и š остаётся: <b>predsednik, gradski</b>.</li>
+        <li>Двойных согласных почти нет: <b>kasa, adresa, odeljenje</b>.</li>
+        <li>С маленькой: дни, месяцы, языки (<b>ponedeljak, oktobar, srpski</b>). С большой: национальность (<b>Rus, Srbin, Srpkinja</b>), праздники (<b>Božić, Nova godina</b>), каждое слово в названии города (<b>Novi Sad</b>), вежливое <b>Vi, Vam</b> в письме.</li>
+        <li><b>ne</b> с глаголом раздельно (<b>ne znam</b>), но слитно <b>nisam, neću, nemam, nema</b>. С прилагательными слитно: <b>nevažno</b>. Раздельно: <b>da li, zato što, ni sa kim</b>. Слитно: <b>niko, ništa, uvek, petsto</b>.</li>
+        <li>Запятые: перед <b>da</b> не ставят (<b>Mislim da je…</b>). Если часть с kad, ako, gde идёт после главной, тоже без запятой (<b>Javi mi kad dođeš</b>), если первой, то с запятой (<b>Kad dođeš, javi mi</b>). Перед <b>ali, a, nego</b> запятая нужна, перед <b>i</b> нет. Обращение выделяется: <b>Zdravo, Marko!</b></li>
+      </ul>
+    <a class="go" href="pisanje-quiz.html">Потренироваться →</a>
+  </section>
+</div>
+</body>
+</html>
