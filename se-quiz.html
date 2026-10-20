@@ -326,6 +326,16 @@ const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  udžbenik: ["N", "учебник"], ranac: ["N", "рюкзак"], stolica: ["N", "стул"], olovka: ["N", "карандаш"], tabla: ["N", "доска"], učionica: ["N", "класс (комната)"], mesto: ["N", "место"], slovo: ["N", "буква"],
+  ime: ["N", "имя"], prezime: ["N", "фамилия"], more: ["N", "море"], posao: ["N", "работа"], kolega: ["N", "коллега"], taksi: ["N", "такси"], reč: ["N", "слово"], stvar: ["N", "вещь"], so: ["N", "соль"],
+  torba: ["N", "сумка"], sveska: ["N", "тетрадь"], selo: ["N", "деревня"], profesor: ["N", "преподаватель"], stranac: ["N", "иностранец"], stranci: ["N", "иностранцы"], učenik: ["N", "ученик"], učenici: ["N", "ученики"],
+  dijalog: ["N", "диалог"], dijalozi: ["N", "диалоги"], grad: ["N", "город"], gradovi: ["N", "города"], stolovi: ["N", "столы"], broj: ["N", "номер, число"], brojevi: ["N", "номера, числа"], dani: ["N", "дни"],
+  đak: ["N", "школьник"], đaci: ["N", "школьники"], turista: ["N", "турист"], ulica: ["N", "улица"], ulice: ["N", "улицы"], torbe: ["N", "сумки"], stvari: ["N", "вещи"], slova: ["N", "буквы"], imena: ["N", "имена"], prezimena: ["N", "фамилии"],
+  lekar: ["N", "врач"], lekarka: ["N", "врач (женщина)"], profesorka: ["N", "преподавательница"], učitelj: ["N", "учитель"], učiteljica: ["N", "учительница"], konobar: ["N", "официант"], konobarica: ["N", "официантка"],
+  kuvar: ["N", "повар"], kuvarica: ["N", "повариха"], pevač: ["N", "певец"], pevačica: ["N", "певица"], učenica: ["N", "ученица"], službenik: ["N", "служащий"], službenica: ["N", "служащая"], studentkinja: ["N", "студентка"],
+  ekonomista: ["N", "экономист"], ekonomistkinja: ["N", "экономист (женщина)"], policajac: ["N", "полицейский"], policajka: ["N", "полицейская"], komšinica: ["N", "соседка"], koleginica: ["N", "коллега (женщина)"],
+  programer: ["N", "программист"], programerka: ["N", "программистка"], penzioner: ["N", "пенсионер"], penzionerka: ["N", "пенсионерка"],
+  moje: ["P", "моё"], tvoje: ["P", "твоё"], naš: ["P", "наш"], naša: ["P", "наша"], naše: ["P", "наше"], vaša: ["P", "ваша"], a: ["C", "а"],
   vas: ["P", "вас (molim vas = пожалуйста)"],
   jedan: ["M", "один"], jedna: ["M", "одна"], jedno: ["M", "одно"], jednu: ["M", "одну"], dva: ["M", "два"], tri: ["M", "три"], četiri: ["M", "четыре"],
   jedanaest: ["M", "одиннадцать"], dvanaest: ["M", "двенадцать"], četrnaest: ["M", "четырнадцать"], petnaest: ["M", "пятнадцать"], šesnaest: ["M", "шестнадцать"], devetnaest: ["M", "девятнадцать"],
@@ -441,6 +451,9 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  udžbenik: 1, stolica: 1, olovka: 1, prezime: 1, kolega: 1, profesor: 2, učenik: 1, učenici: 1, gradovi: 1, stolovi: 1, brojevi: 1, turista: 2, lekarka: 1, profesorka: 2, učitelj: 1, konobar: 1,
+  kuvarica: 1, pevačica: 1, učenica: 1, službenik: 1, službenica: 1, policajac: 2, policajka: 2, imena: 1, učionica: 0, dijalog: 0, dijalozi: 0, prezimena: 0, učiteljica: 0, konobarica: 0,
+  studentkinja: 0, ekonomista: 0, ekonomistkinja: 0, komšinica: 0, koleginica: 0, programer: 0, programerka: 0, penzioner: 0, penzionerka: 0,
   jedanaest: 2, četrnaest: 2, devetnaest: 2, devetnaesti: 2, četrdeset: 3, pedeset: 2, šezdeset: 2, devedeset: 3, dvadeset: 1, trideset: 1, četiristo: 1, četiri: 1,
   hiljadu: 1, hiljade: 1, hiljada: 1, dvadesetog: 0, devedesete: 0, godina: 1, godinu: 1, godine: 1, meseci: 1, mesecu: 1, dolazi: 1, platite: 1, nedeljno: 1,
   oktobra: 1, oktobar: 1, novembra: 1, januara: 1, decembra: 1, avgusta: 1, septembra: 1, sastanak: 1, stanujem: 1, koštaju: 1, kartici: 1, računu: 1, plaćanje: 1, moguće: 1, kirije: 1, uplata: 1,

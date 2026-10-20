@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Тренажёр: род и окончания</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column, a card for the current sentence, choice buttons below, feedback panel under them */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #1b2433;
+  --muted: #5c6878;
+  --line: #d9dfe8;
+  --accent: #1f4e8c;
+  --accent-soft: #e3ecf8;
+  --good: #1d7a4a;
+  --good-soft: #e2f3ea;
+  --bad: #b23a2a;
+  --stress: #d4231b;
+  --bad-soft: #f9e6e2;
+  --display: "Alegreya", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --pos-v: #b4532a; --pos-p: #2f5fb3; --pos-n: #8a6410; --pos-a: #7b3fa0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161e; --surface: #1a212c; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3645;
+    --accent: #7fa8e6; --accent-soft: #1f2d42; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161e; --surface: #1a212c; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3645;
+  --accent: #7fa8e6; --accent-soft: #1f2d42; --good: #5cc48c; --good-soft: #17301f; --bad: #ee8a7a; --bad-soft: #3a1f1b; --stress: #ff6b5e; --pos-v: #f0a07a; --pos-p: #8fb3f0; --pos-n: #d9b45a; --pos-a: #c79be6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 { font-family: var(--display); font-size: 2rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.sub { color: var(--muted); margin: 0; }
+
+details.cheat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.cheat summary { cursor: pointer; padding: 12px 16px; font-weight: 700; }
+details.cheat summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.cheat-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
+td.f { font-family: var(--mono); font-size: 0.95rem; color: var(--accent); }
+.rules { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.rules b { font-family: var(--mono); font-weight: 500; }
+
+.bar { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track { flex: 1; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; background: var(--accent); width: 0; transition: width .25s ease; }
+.stage-tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.sentence { font-family: var(--display); font-size: 1.65rem; line-height: 1.3; margin: 0; text-wrap: balance; }
+.hint { font-family: var(--body); font-size: 1rem; color: var(--muted); font-weight: 500; }
+.blank { display: inline-block; min-width: 3.2em; border-bottom: 2px solid var(--accent); text-align: center; color: var(--accent); }
+.blank.ok { color: var(--good); border-color: var(--good); }
+.blank.no { color: var(--bad); border-color: var(--bad); }
+.ru { color: var(--muted); margin: 0; }
+.ru[hidden] { display: none; }
+
+.opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.opts.wide { grid-template-columns: 1fr; }
+.opt {
+  font: inherit; font-family: var(--mono); font-size: 1.05rem; padding: 12px 10px; border-radius: 10px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; justify-content: center; min-width: 0;
+}
+.opts.wide .opt { justify-content: flex-start; font-family: var(--body); font-size: 1.1rem; text-align: left; }
+.opt .k { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); }
+.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt:disabled { cursor: default; }
+.opt.ok { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+.opt.no { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+
+.fb { border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.fb.ok { background: var(--good-soft); }
+.fb.no { background: var(--bad-soft); }
+.fb h3 { margin: 0; font-size: 1.05rem; }
+.fb.ok h3 { color: var(--good); }
+.fb.no h3 { color: var(--bad); }
+.fb p { margin: 0; }
+.fb code { font-family: var(--mono); font-size: 0.92em; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  font: inherit; font-weight: 700; padding: 11px 20px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--accent); color: var(--surface);
+}
+.btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.keys { font-size: 0.85rem; color: var(--muted); }
+
+.result { display: flex; flex-direction: column; gap: 14px; }
+.score { font-family: var(--display); font-size: 3rem; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.score small { font-size: 1.2rem; color: var(--muted); font-family: var(--body); }
+.miss { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.miss li { border-left: 3px solid var(--bad); padding: 4px 0 4px 12px; }
+.miss .s { font-family: var(--display); font-size: 1.15rem; }
+.miss .s b { color: var(--good); }
+.miss .r { color: var(--muted); font-size: 0.92rem; }
+.script { display: inline-flex; border: 1.5px solid var(--accent); border-radius: 999px; overflow: hidden; align-self: flex-start; margin-top: 8px; }
+.script button { font: inherit; font-weight: 700; padding: 6px 16px; border: none; background: transparent; color: var(--accent); cursor: pointer; }
+.script button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.script button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+.tr { color: var(--muted); font-size: 0.9em; }
+.parse { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.parse-h { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: flex; flex-direction: column; padding: 6px 10px; border-radius: 8px; background: var(--bg); border-top: 3px solid var(--line); min-width: 0; }
+.chip .cw { font-family: var(--display); font-size: 1.1rem; line-height: 1.2; }
+.chip .cp { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.chip .cr { font-size: 0.85rem; color: var(--muted); }
+.chip.pos-V { border-top-color: var(--pos-v); } .chip.pos-V .cp { color: var(--pos-v); }
+.chip.pos-P { border-top-color: var(--pos-p); } .chip.pos-P .cp { color: var(--pos-p); }
+.chip.pos-N { border-top-color: var(--pos-n); } .chip.pos-N .cp { color: var(--pos-n); }
+.chip.pos-A { border-top-color: var(--pos-a); } .chip.pos-A .cp { color: var(--pos-a); }
+.ab { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ab-c { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--bg); min-width: 0; }
+.ab-l, .ab-y { font-family: var(--display); font-size: 1.25rem; line-height: 1.2; }
+.ab-l { color: var(--accent); }
+.ab-r { font-size: 0.85rem; color: var(--muted); }
+header details.cheat { margin-top: 10px; }
+.chip { font: inherit; color: inherit; text-align: left; border: none; cursor: pointer; }
+.chip:hover:not(:disabled) { background: var(--accent-soft); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip:disabled { cursor: default; }
+.chip .cs { font-size: 0.72rem; color: var(--accent); font-weight: 700; }
+.chip.saved .cs { color: var(--good); }
+.parse-h a { color: var(--accent); }
+.back { align-self: flex-start; font-weight: 700; color: var(--accent); text-decoration: none; font-size: 0.95rem; margin-bottom: 6px; }
+.back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.st { position: relative; display: inline-block; line-height: 1; }
+.st::after { content: ""; position: absolute; left: 50%; top: 0.02em; width: 0.17em; height: 0.26em; margin-left: -0.05em; background: var(--stress); clip-path: polygon(62% 0, 100% 14%, 22% 100%, 6% 92%); pointer-events: none; }
+.st.up::after { top: -0.17em; }
+.st.i::after { top: -0.27em; }
+.st.i.cy::after { top: 0.02em; }
+.nw { white-space: nowrap; }
+.topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.topics button { font: inherit; font-weight: 700; font-size: 0.92rem; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
+.topics button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.topics button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.topics .n { font-weight: 400; opacity: 0.75; margin-left: 6px; }
+.nostress .st::after { display: none; }
+.nostress .st-note { display: none; }
+.stress-tg { font: inherit; font-weight: 700; padding: 6px 16px; border: 1.5px solid var(--stress); border-radius: 999px; background: transparent; color: var(--stress); cursor: pointer; align-self: flex-start; margin-top: 8px; }
+.stress-tg[aria-pressed="true"] { background: var(--stress); color: #fff; }
+.stress-tg:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 420px) { .sentence { font-size: 1.4rem; } h1 { font-size: 1.7rem; } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+.built { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; min-height: 52px; padding: 8px 10px; border: 1.5px dashed var(--line); border-radius: 10px; }
+.built.ok { border: 1.5px solid var(--good); background: var(--good-soft); }
+.built.no { border: 1.5px solid var(--bad); background: var(--bad-soft); }
+.built .ph { color: var(--muted); align-self: center; }
+.built .end { font-family: var(--display); font-size: 1.3rem; margin-left: -6px; }
+.tiles { display: flex; flex-wrap: wrap; gap: 8px; }
+.tiles[hidden], .actions[hidden] { display: none; }
+.tile { font: inherit; font-family: var(--display); font-size: 1.25rem; padding: 6px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.tile:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tiles .tile:disabled { visibility: hidden; }
+.built .tile { border-color: var(--accent); }
+.built .tile:disabled { cursor: default; border-color: transparent; background: transparent; padding-inline: 2px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back noconv" href="index.html">← Все тесты</a>
+    <h1>Род и <em>окончания</em></h1>
+    <p class="sub">Какого рода слово, moj / moja / moje, множественное число (studenti, gradovi, ulice, slova) и профессии для женщин. Если ошибёшься, будет объяснение.</p>
+    <div class="script noconv" role="group" aria-label="Алфавит">
+      <button id="sc-mix" aria-pressed="true">Вперемешку</button>
+      <button id="sc-lat" aria-pressed="false">Latinica</button>
+      <button id="sc-cyr" aria-pressed="false">Ћирилица</button>
+    </div>
+    <button class="stress-tg noconv" id="stress-tg" aria-pressed="true" title="Показать или скрыть ударения">Ударения: вкл</button>
+    <details class="cheat noconv" id="abc">
+      <summary>Алфавит: латиница, кириллица и как звучит</summary>
+      <div class="cheat-body">
+        <p class="sub">30 букв, одна буква = один звук. Порядок как в сербской азбуке.</p>
+        <div class="ab"><div class="ab-c"><span class="ab-l">A a</span><span class="ab-y">А а</span><span class="ab-r">а</span></div><div class="ab-c"><span class="ab-l">B b</span><span class="ab-y">Б б</span><span class="ab-r">б</span></div><div class="ab-c"><span class="ab-l">V v</span><span class="ab-y">В в</span><span class="ab-r">в</span></div><div class="ab-c"><span class="ab-l">G g</span><span class="ab-y">Г г</span><span class="ab-r">г</span></div><div class="ab-c"><span class="ab-l">D d</span><span class="ab-y">Д д</span><span class="ab-r">д</span></div><div class="ab-c"><span class="ab-l">Đ đ</span><span class="ab-y">Ђ ђ</span><span class="ab-r">мягкое «дь», почти «джь»</span></div><div class="ab-c"><span class="ab-l">E e</span><span class="ab-y">Е е</span><span class="ab-r">э</span></div><div class="ab-c"><span class="ab-l">Ž ž</span><span class="ab-y">Ж ж</span><span class="ab-r">ж</span></div><div class="ab-c"><span class="ab-l">Z z</span><span class="ab-y">З з</span><span class="ab-r">з</span></div><div class="ab-c"><span class="ab-l">I i</span><span class="ab-y">И и</span><span class="ab-r">и</span></div><div class="ab-c"><span class="ab-l">J j</span><span class="ab-y">Ј ј</span><span class="ab-r">й</span></div><div class="ab-c"><span class="ab-l">K k</span><span class="ab-y">К к</span><span class="ab-r">к</span></div><div class="ab-c"><span class="ab-l">L l</span><span class="ab-y">Л л</span><span class="ab-r">л</span></div><div class="ab-c"><span class="ab-l">Lj lj</span><span class="ab-y">Љ љ</span><span class="ab-r">ль</span></div><div class="ab-c"><span class="ab-l">M m</span><span class="ab-y">М м</span><span class="ab-r">м</span></div><div class="ab-c"><span class="ab-l">N n</span><span class="ab-y">Н н</span><span class="ab-r">н</span></div><div class="ab-c"><span class="ab-l">Nj nj</span><span class="ab-y">Њ њ</span><span class="ab-r">нь</span></div><div class="ab-c"><span class="ab-l">O o</span><span class="ab-y">О о</span><span class="ab-r">о (не «а»)</span></div><div class="ab-c"><span class="ab-l">P p</span><span class="ab-y">П п</span><span class="ab-r">п</span></div><div class="ab-c"><span class="ab-l">R r</span><span class="ab-y">Р р</span><span class="ab-r">р, бывает гласной: srpski</span></div><div class="ab-c"><span class="ab-l">S s</span><span class="ab-y">С с</span><span class="ab-r">с</span></div><div class="ab-c"><span class="ab-l">T t</span><span class="ab-y">Т т</span><span class="ab-r">т</span></div><div class="ab-c"><span class="ab-l">Ć ć</span><span class="ab-y">Ћ ћ</span><span class="ab-r">мягкое «чь»</span></div><div class="ab-c"><span class="ab-l">U u</span><span class="ab-y">У у</span><span class="ab-r">у</span></div><div class="ab-c"><span class="ab-l">F f</span><span class="ab-y">Ф ф</span><span class="ab-r">ф</span></div><div class="ab-c"><span class="ab-l">H h</span><span class="ab-y">Х х</span><span class="ab-r">х</span></div><div class="ab-c"><span class="ab-l">C c</span><span class="ab-y">Ц ц</span><span class="ab-r">ц</span></div><div class="ab-c"><span class="ab-l">Č č</span><span class="ab-y">Ч ч</span><span class="ab-r">твёрдое «ч»</span></div><div class="ab-c"><span class="ab-l">Dž dž</span><span class="ab-y">Џ џ</span><span class="ab-r">твёрдое «дж»</span></div><div class="ab-c"><span class="ab-l">Š š</span><span class="ab-y">Ш ш</span><span class="ab-r">ш</span></div></div>
+      </div>
+    </details>
+  </header>
+
+  <details class="cheat" id="cheat">
+    <summary>Шпаргалка: род, множественное число, moj / tvoj</summary>
+    <div class="cheat-body">
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>on (муж.)</th><th>ona (жен.)</th><th>ono (ср.)</th></tr></thead>
+          <tbody>
+            <tr><td>Окончание</td><td class="f">согласный: sat, ključ</td><td class="f">-a: knjiga, sveska</td><td class="f">-o, -e: slovo, mesto, ime</td></tr>
+            <tr><td>Исключения</td><td class="f">sto, posao (-o); komšija, kolega (-a); taksi</td><td class="f">reč, stvar (согласный); so (-o)</td><td></td></tr>
+            <tr><td>ja <span class="tr">(мой)</span></td><td class="f">moj</td><td class="f">moja</td><td class="f">moje</td></tr>
+            <tr><td>ti <span class="tr">(твой)</span></td><td class="f">tvoj</td><td class="f">tvoja</td><td class="f">tvoje</td></tr>
+            <tr><td>mi <span class="tr">(наш)</span></td><td class="f">naš</td><td class="f">naša</td><td class="f">naše</td></tr>
+            <tr><td>vi <span class="tr">(ваш)</span></td><td class="f">vaš</td><td class="f">vaša</td><td class="f">vaše</td></tr>
+            <tr><td>Мн. число</td><td class="f">-i: studenti; короткие -ovi / -evi: gradovi, brojevi</td><td class="f">-a → -e: ulice; согласный → -i: stvari</td><td class="f">-a: slova; ime → imena</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li>Род смотрим по окончанию, а не по русскому переводу: <b>olovka</b> (карандаш) и <b>stolica</b> (стул) женского рода, <b>prezime</b> (фамилия) среднего, <b>posao</b> (работа) мужского.</li>
+        <li>Мужской род во мн. числе: <b>-i</b> (student → studenti, stranac → stranci). Перед -i: <b>k → c</b> (učenik → učenici), <b>g → z</b> (dijalog → dijalozi), <b>h → s</b> (orah → orasi).</li>
+        <li>Короткие слова мужского рода (один слог) получают <b>-ovi</b>: grad → gradovi, sto → stolovi. После j, lj, nj, č, ć, đ, ž, dž, š получается <b>-evi</b>: broj → brojevi, ključ → ključevi. Исключения: dan → dani, đak → đaci.</li>
+        <li>Мужской род на -a: <b>komšija → komšije</b>, но <b>turista → turisti</b>.</li>
+        <li>Профессии, она: <b>-ka</b> (lekar → lekarka, profesor → profesorka, programer → programerka, policajac → policajka), <b>-ica</b> (učitelj → učiteljica, pevač → pevačica, učenik → učenica, konobar → konobarica, kuvar → kuvarica), особые: <b>student → studentkinja</b>, <b>ekonomista → ekonomistkinja</b>, <b>komšija → komšinica</b>, <b>kolega → koleginica</b>.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="topics noconv" id="topics" role="group" aria-label="Тема"></div>
+  <main id="app"></main>
+</div>
+
+<script>
+const ITEMS = [{"s":"Какого рода?","t":"Ovo je sto. ___ je ovde.","ru":"Это стол. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>sto мужского рода, хотя кончается на -o (как posao). Мн. число stolovi.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>sto мужского рода, хотя кончается на -o (как posao). Мн. число stolovi.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>sto мужского рода, хотя кончается на -o (как posao). Мн. число stolovi.</p>"]},{"s":"Какого рода?","t":"Ovo je telefon. ___ je ovde.","ru":"Это телефон. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>Кончается на согласный, значит мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Кончается на согласный, значит мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Кончается на согласный, значит мужской род.</p>"]},{"s":"Какого рода?","t":"Ovo je udžbenik. ___ je ovde.","ru":"Это учебник. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>udžbenik кончается на согласный, мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>udžbenik кончается на согласный, мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>udžbenik кончается на согласный, мужской род.</p>"]},{"s":"Какого рода?","t":"Ovo je ranac. ___ je ovde.","ru":"Это рюкзак. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>ranac (рюкзак) на согласный, мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>ranac (рюкзак) на согласный, мужской род.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>ranac (рюкзак) на согласный, мужской род.</p>"]},{"s":"Какого рода?","t":"Ovo je ključ. ___ je ovde.","ru":"Это ключ. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>ključ на согласный, мужской род, как и в русском.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>ključ на согласный, мужской род, как и в русском.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>ključ на согласный, мужской род, как и в русском.</p>"]},{"s":"Какого рода?","t":"Ovo je stolica. ___ je ovde.","ru":"Это стул. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>stolica (стул) кончается на -a, значит женский род. В русском «стул» мужского, тут легко ошибиться.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>stolica (стул) кончается на -a, значит женский род. В русском «стул» мужского, тут легко ошибиться.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>stolica (стул) кончается на -a, значит женский род. В русском «стул» мужского, тут легко ошибиться.</p>"]},{"s":"Какого рода?","t":"Ovo je olovka. ___ je ovde.","ru":"Это карандаш. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>olovka (карандаш) на -a, женский род. В русском «карандаш» мужского рода.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>olovka (карандаш) на -a, женский род. В русском «карандаш» мужского рода.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>olovka (карандаш) на -a, женский род. В русском «карандаш» мужского рода.</p>"]},{"s":"Какого рода?","t":"Ovo je tabla. ___ je ovde.","ru":"Это доска. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>tabla на -a, женский род.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>tabla на -a, женский род.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>tabla на -a, женский род.</p>"]},{"s":"Какого рода?","t":"Ovo je učionica. ___ je ovde.","ru":"Это класс (комната). Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>učionica на -a, женский род.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>učionica на -a, женский род.</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>učionica на -a, женский род.</p>"]},{"s":"Какого рода?","t":"Ovo je mesto. ___ je ovde.","ru":"Это место. Оно здесь.","o":["On","Ona","Ono"],"ai":2,"why":["<p>Правильно: <code>{{sr:Ono}}</code></p><p>mesto на -o, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>mesto на -o, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>mesto на -o, средний род.</p>"]},{"s":"Какого рода?","t":"Ovo je slovo. ___ je ovde.","ru":"Это буква. Оно здесь.","o":["On","Ona","Ono"],"ai":2,"why":["<p>Правильно: <code>{{sr:Ono}}</code></p><p>slovo (буква) на -o, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>slovo (буква) на -o, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>slovo (буква) на -o, средний род.</p>"]},{"s":"Какого рода?","t":"Ovo je ime. ___ je ovde.","ru":"Это имя. Оно здесь.","o":["On","Ona","Ono"],"ai":2,"why":["<p>Правильно: <code>{{sr:Ono}}</code></p><p>ime на -e, средний род, как русское «имя».</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>ime на -e, средний род, как русское «имя».</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>ime на -e, средний род, как русское «имя».</p>"]},{"s":"Какого рода?","t":"Ovo je prezime. ___ je ovde.","ru":"Это фамилия. Оно здесь.","o":["On","Ona","Ono"],"ai":2,"why":["<p>Правильно: <code>{{sr:Ono}}</code></p><p>prezime (фамилия) на -e, средний род. В русском «фамилия» женского рода.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>prezime (фамилия) на -e, средний род. В русском «фамилия» женского рода.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>prezime (фамилия) на -e, средний род. В русском «фамилия» женского рода.</p>"]},{"s":"Какого рода?","t":"Ovo je more. ___ je ovde.","ru":"Это море. Оно здесь.","o":["On","Ona","Ono"],"ai":2,"why":["<p>Правильно: <code>{{sr:Ono}}</code></p><p>more на -e, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>more на -e, средний род.</p>","<p>Правильно: <code>{{sr:Ono}}</code></p><p>more на -e, средний род.</p>"]},{"s":"Какого рода?","t":"Ovo je posao. ___ je ovde.","ru":"Это работа. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: posao кончается на -o, но мужского рода (мн. число poslovi). Так же sto (stolovi).</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: posao кончается на -o, но мужского рода (мн. число poslovi). Так же sto (stolovi).</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: posao кончается на -o, но мужского рода (мн. число poslovi). Так же sto (stolovi).</p>"]},{"s":"Какого рода?","t":"Ovo je komšija. ___ je ovde.","ru":"Это сосед. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: komšija кончается на -a, но это мужчина, поэтому мужской род. Так же kolega, sudija.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: komšija кончается на -a, но это мужчина, поэтому мужской род. Так же kolega, sudija.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Исключение: komšija кончается на -a, но это мужчина, поэтому мужской род. Так же kolega, sudija.</p>"]},{"s":"Какого рода?","t":"Ovo je kolega. ___ je ovde.","ru":"Это коллега. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>kolega на -a, но обозначает мужчину, поэтому мужской род, как русское «коллега» про мужчину.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>kolega на -a, но обозначает мужчину, поэтому мужской род, как русское «коллега» про мужчину.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>kolega на -a, но обозначает мужчину, поэтому мужской род, как русское «коллега» про мужчину.</p>"]},{"s":"Какого рода?","t":"Ovo je taksi. ___ je ovde.","ru":"Это такси. Он здесь.","o":["On","Ona","Ono"],"ai":0,"why":["<p>Правильно: <code>{{sr:On}}</code></p><p>Иностранные слова на -i и -u обычно мужского рода: taksi, intervju.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Иностранные слова на -i и -u обычно мужского рода: taksi, intervju.</p>","<p>Правильно: <code>{{sr:On}}</code></p><p>Иностранные слова на -i и -u обычно мужского рода: taksi, intervju.</p>"]},{"s":"Какого рода?","t":"Ovo je reč. ___ je ovde.","ru":"Это слово. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: reč (слово) кончается на согласный, но женского рода. Как в русском «речь», «ночь».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: reč (слово) кончается на согласный, но женского рода. Как в русском «речь», «ночь».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: reč (слово) кончается на согласный, но женского рода. Как в русском «речь», «ночь».</p>"]},{"s":"Какого рода?","t":"Ovo je stvar. ___ je ovde.","ru":"Это вещь. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>stvar (вещь) на согласный, но женского рода, как русское «вещь».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>stvar (вещь) на согласный, но женского рода, как русское «вещь».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>stvar (вещь) на согласный, но женского рода, как русское «вещь».</p>"]},{"s":"Какого рода?","t":"Ovo je so. ___ je ovde.","ru":"Это соль. Она здесь.","o":["On","Ona","Ono"],"ai":1,"why":["<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: so (соль) кончается на -o, но женского рода, как русское «соль».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: so (соль) кончается на -o, но женского рода, как русское «соль».</p>","<p>Правильно: <code>{{sr:Ona}}</code></p><p>Исключение: so (соль) кончается на -o, но женского рода, как русское «соль».</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ torba.","ru":"Это моя сумка.","o":["moj","moja","moje"],"ai":1,"h":"ja","why":["<p>Правильно: <code>{{sr:moja}}</code></p><p>torba женского рода, поэтому moja.</p>","<p>Правильно: <code>{{sr:moja}}</code></p><p>torba женского рода, поэтому moja.</p>","<p>Правильно: <code>{{sr:moja}}</code></p><p>torba женского рода, поэтому moja.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ telefon.","ru":"Это мой телефон.","o":["moj","moja","moje"],"ai":0,"h":"ja","why":["<p>Правильно: <code>{{sr:moj}}</code></p><p>telefon мужского рода: moj.</p>","<p>Правильно: <code>{{sr:moj}}</code></p><p>telefon мужского рода: moj.</p>","<p>Правильно: <code>{{sr:moj}}</code></p><p>telefon мужского рода: moj.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ mesto.","ru":"Это моё место.","o":["moj","moja","moje"],"ai":2,"h":"ja","why":["<p>Правильно: <code>{{sr:moje}}</code></p><p>mesto среднего рода: moje.</p>","<p>Правильно: <code>{{sr:moje}}</code></p><p>mesto среднего рода: moje.</p>","<p>Правильно: <code>{{sr:moje}}</code></p><p>mesto среднего рода: moje.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo nije ___ ime.","ru":"Это не моё имя.","o":["moj","moja","moje"],"ai":2,"h":"ja","why":["<p>Правильно: <code>{{sr:moje}}</code></p><p>ime среднего рода: moje ime.</p>","<p>Правильно: <code>{{sr:moje}}</code></p><p>ime среднего рода: moje ime.</p>","<p>Правильно: <code>{{sr:moje}}</code></p><p>ime среднего рода: moje ime.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ posao.","ru":"Это моя работа.","o":["moj","moja","moje"],"ai":0,"h":"ja","why":["<p>Правильно: <code>{{sr:moj}}</code></p><p>posao мужского рода (хоть и на -o): moj posao. В русском «работа» женского рода.</p>","<p>Правильно: <code>{{sr:moj}}</code></p><p>posao мужского рода (хоть и на -o): moj posao. В русском «работа» женского рода.</p>","<p>Правильно: <code>{{sr:moj}}</code></p><p>posao мужского рода (хоть и на -o): moj posao. В русском «работа» женского рода.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Gde je ___ sveska?","ru":"Где твоя тетрадь?","o":["tvoj","tvoja","tvoje"],"ai":1,"h":"ti","why":["<p>Правильно: <code>{{sr:tvoja}}</code></p><p>sveska женского рода: tvoja.</p>","<p>Правильно: <code>{{sr:tvoja}}</code></p><p>sveska женского рода: tvoja.</p>","<p>Правильно: <code>{{sr:tvoja}}</code></p><p>sveska женского рода: tvoja.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Gde je ___ ključ?","ru":"Где твой ключ?","o":["tvoj","tvoja","tvoje"],"ai":0,"h":"ti","why":["<p>Правильно: <code>{{sr:tvoj}}</code></p><p>ključ мужского рода: tvoj.</p>","<p>Правильно: <code>{{sr:tvoj}}</code></p><p>ključ мужского рода: tvoj.</p>","<p>Правильно: <code>{{sr:tvoj}}</code></p><p>ključ мужского рода: tvoj.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Kako je ___ prezime?","ru":"Какая у тебя фамилия?","o":["tvoj","tvoja","tvoje"],"ai":2,"h":"ti","why":["<p>Правильно: <code>{{sr:tvoje}}</code></p><p>prezime среднего рода: tvoje. В русском «фамилия» женского рода.</p>","<p>Правильно: <code>{{sr:tvoje}}</code></p><p>prezime среднего рода: tvoje. В русском «фамилия» женского рода.</p>","<p>Правильно: <code>{{sr:tvoje}}</code></p><p>prezime среднего рода: tvoje. В русском «фамилия» женского рода.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Da li je ovo ___ olovka?","ru":"Это твой карандаш?","o":["tvoj","tvoja","tvoje"],"ai":1,"h":"ti","why":["<p>Правильно: <code>{{sr:tvoja}}</code></p><p>olovka женского рода: tvoja. В русском «карандаш» мужского.</p>","<p>Правильно: <code>{{sr:tvoja}}</code></p><p>olovka женского рода: tvoja. В русском «карандаш» мужского.</p>","<p>Правильно: <code>{{sr:tvoja}}</code></p><p>olovka женского рода: tvoja. В русском «карандаш» мужского.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ učionica.","ru":"Это наш класс.","o":["naš","naša","naše"],"ai":1,"h":"mi","why":["<p>Правильно: <code>{{sr:naša}}</code></p><p>učionica женского рода: naša.</p>","<p>Правильно: <code>{{sr:naša}}</code></p><p>učionica женского рода: naša.</p>","<p>Правильно: <code>{{sr:naša}}</code></p><p>učionica женского рода: naša.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ komšija.","ru":"Это наш сосед.","o":["naš","naša","naše"],"ai":0,"h":"mi","why":["<p>Правильно: <code>{{sr:naš}}</code></p><p>komšija мужского рода (хоть и на -a): naš komšija.</p>","<p>Правильно: <code>{{sr:naš}}</code></p><p>komšija мужского рода (хоть и на -a): naš komšija.</p>","<p>Правильно: <code>{{sr:naš}}</code></p><p>komšija мужского рода (хоть и на -a): naš komšija.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ selo.","ru":"Это наша деревня.","o":["naš","naša","naše"],"ai":2,"h":"mi","why":["<p>Правильно: <code>{{sr:naše}}</code></p><p>selo среднего рода: naše. В русском «деревня» женского.</p>","<p>Правильно: <code>{{sr:naše}}</code></p><p>selo среднего рода: naše. В русском «деревня» женского.</p>","<p>Правильно: <code>{{sr:naše}}</code></p><p>selo среднего рода: naše. В русском «деревня» женского.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Gde je ___ profesor?","ru":"Где наш преподаватель?","o":["naš","naša","naše"],"ai":0,"h":"mi","why":["<p>Правильно: <code>{{sr:naš}}</code></p><p>profesor мужского рода: naš.</p>","<p>Правильно: <code>{{sr:naš}}</code></p><p>profesor мужского рода: naš.</p>","<p>Правильно: <code>{{sr:naš}}</code></p><p>profesor мужского рода: naš.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Da li je ovo ___ ranac?","ru":"Это ваш рюкзак?","o":["vaš","vaša","vaše"],"ai":0,"h":"vi","why":["<p>Правильно: <code>{{sr:vaš}}</code></p><p>ranac мужского рода: vaš.</p>","<p>Правильно: <code>{{sr:vaš}}</code></p><p>ranac мужского рода: vaš.</p>","<p>Правильно: <code>{{sr:vaš}}</code></p><p>ranac мужского рода: vaš.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Kako je ___ ime?","ru":"Как ваше имя?","o":["vaš","vaša","vaše"],"ai":2,"h":"vi","why":["<p>Правильно: <code>{{sr:vaše}}</code></p><p>ime среднего рода: vaše.</p>","<p>Правильно: <code>{{sr:vaše}}</code></p><p>ime среднего рода: vaše.</p>","<p>Правильно: <code>{{sr:vaše}}</code></p><p>ime среднего рода: vaše.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Ovo je ___ reč.","ru":"Это ваше слово.","o":["vaš","vaša","vaše"],"ai":1,"h":"vi","why":["<p>Правильно: <code>{{sr:vaša}}</code></p><p>reč женского рода (хоть и на согласный): vaša.</p>","<p>Правильно: <code>{{sr:vaša}}</code></p><p>reč женского рода (хоть и на согласный): vaša.</p>","<p>Правильно: <code>{{sr:vaša}}</code></p><p>reč женского рода (хоть и на согласный): vaša.</p>"]},{"s":"moj, tvoj, naš, vaš","t":"Da li je ovo ___ kolega?","ru":"Это ваш коллега?","o":["vaš","vaša","vaše"],"ai":0,"h":"vi","why":["<p>Правильно: <code>{{sr:vaš}}</code></p><p>kolega мужского рода: vaš.</p>","<p>Правильно: <code>{{sr:vaš}}</code></p><p>kolega мужского рода: vaš.</p>","<p>Правильно: <code>{{sr:vaš}}</code></p><p>kolega мужского рода: vaš.</p>"]},{"s":"Множественное число","t":"Ovo je student, a ovo su ___.","ru":"Это студент, а это студенты.","o":["studenti","studente","studentovi"],"ai":0,"why":["<p>Правильно: <code>{{sr:studenti}}</code></p><p>Мужской род: -i. student → studenti.</p>","<p>Правильно: <code>{{sr:studenti}}</code></p><p>Мужской род: -i. student → studenti.</p>","<p>Правильно: <code>{{sr:studenti}}</code></p><p>Мужской род: -i. student → studenti.</p>"]},{"s":"Множественное число","t":"Ovo je stranac, a ovo su ___.","ru":"Это иностранец, а это иностранцы.","o":["stranci","stranaci","strance"],"ai":0,"why":["<p>Правильно: <code>{{sr:stranci}}</code></p><p>-ac теряет a: stranac → stranci (как русское «иностранец → иностранцы»).</p>","<p>Правильно: <code>{{sr:stranci}}</code></p><p>-ac теряет a: stranac → stranci (как русское «иностранец → иностранцы»).</p>","<p>Правильно: <code>{{sr:stranci}}</code></p><p>-ac теряет a: stranac → stranci (как русское «иностранец → иностранцы»).</p>"]},{"s":"Множественное число","t":"Ovo je učenik, a ovo su ___.","ru":"Это ученик, а это ученики.","o":["učenici","učeniki","učenike"],"ai":0,"why":["<p>Правильно: <code>{{sr:učenici}}</code></p><p>Перед -i буква k становится c: učenik → učenici. Так же g → z (dijalog → dijalozi), h → s (orah → orasi).</p>","<p>Правильно: <code>{{sr:učenici}}</code></p><p>Перед -i буква k становится c: učenik → učenici. Так же g → z (dijalog → dijalozi), h → s (orah → orasi).</p>","<p>Правильно: <code>{{sr:učenici}}</code></p><p>Перед -i буква k становится c: učenik → učenici. Так же g → z (dijalog → dijalozi), h → s (orah → orasi).</p>"]},{"s":"Множественное число","t":"Ovo je dijalog, a ovo su ___.","ru":"Это диалог, а это диалоги.","o":["dijalozi","dijalogi","dijalogovi"],"ai":0,"why":["<p>Правильно: <code>{{sr:dijalozi}}</code></p><p>Перед -i буква g становится z: dijalog → dijalozi.</p>","<p>Правильно: <code>{{sr:dijalozi}}</code></p><p>Перед -i буква g становится z: dijalog → dijalozi.</p>","<p>Правильно: <code>{{sr:dijalozi}}</code></p><p>Перед -i буква g становится z: dijalog → dijalozi.</p>"]},{"s":"Множественное число","t":"Ovo je grad, a ovo su ___.","ru":"Это город, а это города.","o":["gradovi","gradi","grade"],"ai":0,"why":["<p>Правильно: <code>{{sr:gradovi}}</code></p><p>Короткие слова мужского рода (один слог) получают -ovi: grad → gradovi, sto → stolovi.</p>","<p>Правильно: <code>{{sr:gradovi}}</code></p><p>Короткие слова мужского рода (один слог) получают -ovi: grad → gradovi, sto → stolovi.</p>","<p>Правильно: <code>{{sr:gradovi}}</code></p><p>Короткие слова мужского рода (один слог) получают -ovi: grad → gradovi, sto → stolovi.</p>"]},{"s":"Множественное число","t":"Ovo je sto, a ovo su ___.","ru":"Это стол, а это столы.","o":["stolovi","stoovi","stoli"],"ai":0,"why":["<p>Правильно: <code>{{sr:stolovi}}</code></p><p>sto → stolovi: возвращается l, и как у короткого слова -ovi.</p>","<p>Правильно: <code>{{sr:stolovi}}</code></p><p>sto → stolovi: возвращается l, и как у короткого слова -ovi.</p>","<p>Правильно: <code>{{sr:stolovi}}</code></p><p>sto → stolovi: возвращается l, и как у короткого слова -ovi.</p>"]},{"s":"Множественное число","t":"Ovo je broj, a ovo su ___.","ru":"Это номер, а это номера.","o":["brojevi","brojovi","broji"],"ai":0,"why":["<p>Правильно: <code>{{sr:brojevi}}</code></p><p>После j, lj, nj, č, ć, đ, ž, dž, š вместо -ovi пишут -evi: broj → brojevi, ključ → ključevi.</p>","<p>Правильно: <code>{{sr:brojevi}}</code></p><p>После j, lj, nj, č, ć, đ, ž, dž, š вместо -ovi пишут -evi: broj → brojevi, ključ → ključevi.</p>","<p>Правильно: <code>{{sr:brojevi}}</code></p><p>После j, lj, nj, č, ć, đ, ž, dž, š вместо -ovi пишут -evi: broj → brojevi, ključ → ključevi.</p>"]},{"s":"Множественное число","t":"Ovo je ključ, a ovo su ___.","ru":"Это ключ, а это ключи.","o":["ključevi","ključovi","ključi"],"ai":0,"why":["<p>Правильно: <code>{{sr:ključevi}}</code></p><p>После č: -evi, ključ → ključevi.</p>","<p>Правильно: <code>{{sr:ključevi}}</code></p><p>После č: -evi, ključ → ključevi.</p>","<p>Правильно: <code>{{sr:ključevi}}</code></p><p>После č: -evi, ključ → ključevi.</p>"]},{"s":"Множественное число","t":"Ovo je dan, a ovo su ___.","ru":"Это день, а это дни.","o":["dani","danovi","dane"],"ai":0,"why":["<p>Правильно: <code>{{sr:dani}}</code></p><p>Исключения без -ovi: dan → dani, đak → đaci.</p>","<p>Правильно: <code>{{sr:dani}}</code></p><p>Исключения без -ovi: dan → dani, đak → đaci.</p>","<p>Правильно: <code>{{sr:dani}}</code></p><p>Исключения без -ovi: dan → dani, đak → đaci.</p>"]},{"s":"Множественное число","t":"Ovo je đak, a ovo su ___.","ru":"Это школьник, а это школьники.","o":["đaci","đakovi","đaki"],"ai":0,"why":["<p>Правильно: <code>{{sr:đaci}}</code></p><p>Исключение: đak → đaci (без -ovi, и k → c).</p>","<p>Правильно: <code>{{sr:đaci}}</code></p><p>Исключение: đak → đaci (без -ovi, и k → c).</p>","<p>Правильно: <code>{{sr:đaci}}</code></p><p>Исключение: đak → đaci (без -ovi, и k → c).</p>"]},{"s":"Множественное число","t":"Ovo je komšija, a ovo su ___.","ru":"Это сосед, а это соседи.","o":["komšije","komšiji","komšija"],"ai":0,"why":["<p>Правильно: <code>{{sr:komšije}}</code></p><p>Мужской род на -a во множественном как женский: komšija → komšije.</p>","<p>Правильно: <code>{{sr:komšije}}</code></p><p>Мужской род на -a во множественном как женский: komšija → komšije.</p>","<p>Правильно: <code>{{sr:komšije}}</code></p><p>Мужской род на -a во множественном как женский: komšija → komšije.</p>"]},{"s":"Множественное число","t":"Ovo je turista, a ovo su ___.","ru":"Это турист, а это туристы.","o":["turisti","turiste","turistovi"],"ai":0,"why":["<p>Правильно: <code>{{sr:turisti}}</code></p><p>Исключение: turista → turisti (на -ista получают -i).</p>","<p>Правильно: <code>{{sr:turisti}}</code></p><p>Исключение: turista → turisti (на -ista получают -i).</p>","<p>Правильно: <code>{{sr:turisti}}</code></p><p>Исключение: turista → turisti (на -ista получают -i).</p>"]},{"s":"Множественное число","t":"Ovo je ulica, a ovo su ___.","ru":"Это улица, а это улицы.","o":["ulice","ulici","ulica"],"ai":0,"why":["<p>Правильно: <code>{{sr:ulice}}</code></p><p>Женский род на -a: -e. ulica → ulice.</p>","<p>Правильно: <code>{{sr:ulice}}</code></p><p>Женский род на -a: -e. ulica → ulice.</p>","<p>Правильно: <code>{{sr:ulice}}</code></p><p>Женский род на -a: -e. ulica → ulice.</p>"]},{"s":"Множественное число","t":"Ovo je torba, a ovo su ___.","ru":"Это сумка, а это сумки.","o":["torbe","torbi","torbovi"],"ai":0,"why":["<p>Правильно: <code>{{sr:torbe}}</code></p><p>Женский род на -a: -e. torba → torbe.</p>","<p>Правильно: <code>{{sr:torbe}}</code></p><p>Женский род на -a: -e. torba → torbe.</p>","<p>Правильно: <code>{{sr:torbe}}</code></p><p>Женский род на -a: -e. torba → torbe.</p>"]},{"s":"Множественное число","t":"Ovo je stvar, a ovo su ___.","ru":"Это вещь, а это вещи.","o":["stvari","stvare","stvarovi"],"ai":0,"why":["<p>Правильно: <code>{{sr:stvari}}</code></p><p>Женский род на согласный: -i. stvar → stvari, reč → reči.</p>","<p>Правильно: <code>{{sr:stvari}}</code></p><p>Женский род на согласный: -i. stvar → stvari, reč → reči.</p>","<p>Правильно: <code>{{sr:stvari}}</code></p><p>Женский род на согласный: -i. stvar → stvari, reč → reči.</p>"]},{"s":"Множественное число","t":"Ovo je slovo, a ovo su ___.","ru":"Это буква, а это буквы.","o":["slova","slovi","slove"],"ai":0,"why":["<p>Правильно: <code>{{sr:slova}}</code></p><p>Средний род: -a. slovo → slova, mesto → mesta.</p>","<p>Правильно: <code>{{sr:slova}}</code></p><p>Средний род: -a. slovo → slova, mesto → mesta.</p>","<p>Правильно: <code>{{sr:slova}}</code></p><p>Средний род: -a. slovo → slova, mesto → mesta.</p>"]},{"s":"Множественное число","t":"Ovo je ime, a ovo su ___.","ru":"Это имя, а это имена.","o":["imena","ima","imeni"],"ai":0,"why":["<p>Правильно: <code>{{sr:imena}}</code></p><p>ime → imena, как в русском: имя → имена.</p>","<p>Правильно: <code>{{sr:imena}}</code></p><p>ime → imena, как в русском: имя → имена.</p>","<p>Правильно: <code>{{sr:imena}}</code></p><p>ime → imena, как в русском: имя → имена.</p>"]},{"s":"Множественное число","t":"Ovo je prezime, a ovo su ___.","ru":"Это фамилия, а это фамилии.","o":["prezimena","prezima","prezime"],"ai":0,"why":["<p>Правильно: <code>{{sr:prezimena}}</code></p><p>prezime → prezimena, как ime → imena.</p>","<p>Правильно: <code>{{sr:prezimena}}</code></p><p>prezime → prezimena, как ime → imena.</p>","<p>Правильно: <code>{{sr:prezimena}}</code></p><p>prezime → prezimena, как ime → imena.</p>"]},{"s":"Профессии: он и она","t":"Marko je lekar, a Ana je ___.","ru":"Марко врач, а Ана врач (женщина).","o":["lekarka","lekarkinja","lekara"],"ai":0,"why":["<p>Правильно: <code>{{sr:lekarka}}</code></p><p>Многие профессии на -ar, -or, -er получают -ka: lekar → lekarka, profesor → profesorka, programer → programerka.</p>","<p>Правильно: <code>{{sr:lekarka}}</code></p><p>Многие профессии на -ar, -or, -er получают -ka: lekar → lekarka, profesor → profesorka, programer → programerka.</p>","<p>Правильно: <code>{{sr:lekarka}}</code></p><p>Многие профессии на -ar, -or, -er получают -ka: lekar → lekarka, profesor → profesorka, programer → programerka.</p>"]},{"s":"Профессии: он и она","t":"On je profesor, a ona je ___.","ru":"Он преподаватель, а она преподавательница.","o":["profesorka","profesorkinja","profesora"],"ai":0,"why":["<p>Правильно: <code>{{sr:profesorka}}</code></p><p>profesor → profesorka.</p>","<p>Правильно: <code>{{sr:profesorka}}</code></p><p>profesor → profesorka.</p>","<p>Правильно: <code>{{sr:profesorka}}</code></p><p>profesor → profesorka.</p>"]},{"s":"Профессии: он и она","t":"On je učitelj, a ona je ___.","ru":"Он учитель, а она учительница.","o":["učiteljica","učiteljkinja","učitelja"],"ai":0,"why":["<p>Правильно: <code>{{sr:učiteljica}}</code></p><p>После j, č: -ica. učitelj → učiteljica, pevač → pevačica, vaspitač → vaspitačica.</p>","<p>Правильно: <code>{{sr:učiteljica}}</code></p><p>После j, č: -ica. učitelj → učiteljica, pevač → pevačica, vaspitač → vaspitačica.</p>","<p>Правильно: <code>{{sr:učiteljica}}</code></p><p>После j, č: -ica. učitelj → učiteljica, pevač → pevačica, vaspitač → vaspitačica.</p>"]},{"s":"Профессии: он и она","t":"On je konobar, a ona je ___.","ru":"Он официант, а она официантка.","o":["konobarica","konobarkinja","konobara"],"ai":0,"why":["<p>Правильно: <code>{{sr:konobarica}}</code></p><p>Исключение среди слов на -ar: konobar → konobarica, kuvar → kuvarica.</p>","<p>Правильно: <code>{{sr:konobarica}}</code></p><p>Исключение среди слов на -ar: konobar → konobarica, kuvar → kuvarica.</p>","<p>Правильно: <code>{{sr:konobarica}}</code></p><p>Исключение среди слов на -ar: konobar → konobarica, kuvar → kuvarica.</p>"]},{"s":"Профессии: он и она","t":"On je kuvar, a ona je ___.","ru":"Он повар, а она повариха.","o":["kuvarica","kuvarkinja","kuvara"],"ai":0,"why":["<p>Правильно: <code>{{sr:kuvarica}}</code></p><p>kuvar → kuvarica, как konobar → konobarica.</p>","<p>Правильно: <code>{{sr:kuvarica}}</code></p><p>kuvar → kuvarica, как konobar → konobarica.</p>","<p>Правильно: <code>{{sr:kuvarica}}</code></p><p>kuvar → kuvarica, как konobar → konobarica.</p>"]},{"s":"Профессии: он и она","t":"On je pevač, a ona je ___.","ru":"Он певец, а она певица.","o":["pevačica","pevačka","pevača"],"ai":0,"why":["<p>Правильно: <code>{{sr:pevačica}}</code></p><p>pevač → pevačica.</p>","<p>Правильно: <code>{{sr:pevačica}}</code></p><p>pevač → pevačica.</p>","<p>Правильно: <code>{{sr:pevačica}}</code></p><p>pevač → pevačica.</p>"]},{"s":"Профессии: он и она","t":"On je učenik, a ona je ___.","ru":"Он ученик, а она ученица.","o":["učenica","učenika","učenikica"],"ai":0,"why":["<p>Правильно: <code>{{sr:učenica}}</code></p><p>-ik → -ica: učenik → učenica, službenik → službenica.</p>","<p>Правильно: <code>{{sr:učenica}}</code></p><p>-ik → -ica: učenik → učenica, službenik → službenica.</p>","<p>Правильно: <code>{{sr:učenica}}</code></p><p>-ik → -ica: učenik → učenica, službenik → službenica.</p>"]},{"s":"Профессии: он и она","t":"On je službenik, a ona je ___.","ru":"Он служащий, а она служащая.","o":["službenica","službenika","službenka"],"ai":0,"why":["<p>Правильно: <code>{{sr:službenica}}</code></p><p>-ik → -ica: službenik → službenica.</p>","<p>Правильно: <code>{{sr:službenica}}</code></p><p>-ik → -ica: službenik → službenica.</p>","<p>Правильно: <code>{{sr:službenica}}</code></p><p>-ik → -ica: službenik → službenica.</p>"]},{"s":"Профессии: он и она","t":"On je student, a ona je ___.","ru":"Он студент, а она студентка.","o":["studentkinja","studentka","studentinica"],"ai":0,"why":["<p>Правильно: <code>{{sr:studentkinja}}</code></p><p>Запомни: student → studentkinja.</p>","<p>Правильно: <code>{{sr:studentkinja}}</code></p><p>Запомни: student → studentkinja.</p>","<p>Правильно: <code>{{sr:studentkinja}}</code></p><p>Запомни: student → studentkinja.</p>"]},{"s":"Профессии: он и она","t":"On je ekonomista, a ona je ___.","ru":"Он экономист, а она экономист (женщина).","o":["ekonomistkinja","ekonomista","ekonomistka"],"ai":0,"why":["<p>Правильно: <code>{{sr:ekonomistkinja}}</code></p><p>-ista → -istkinja: ekonomista → ekonomistkinja.</p>","<p>Правильно: <code>{{sr:ekonomistkinja}}</code></p><p>-ista → -istkinja: ekonomista → ekonomistkinja.</p>","<p>Правильно: <code>{{sr:ekonomistkinja}}</code></p><p>-ista → -istkinja: ekonomista → ekonomistkinja.</p>"]},{"s":"Профессии: он и она","t":"On je policajac, a ona je ___.","ru":"Он полицейский, а она полицейская.","o":["policajka","policajkinja","policajaca"],"ai":0,"why":["<p>Правильно: <code>{{sr:policajka}}</code></p><p>-ac выпадает: policajac → policajka.</p>","<p>Правильно: <code>{{sr:policajka}}</code></p><p>-ac выпадает: policajac → policajka.</p>","<p>Правильно: <code>{{sr:policajka}}</code></p><p>-ac выпадает: policajac → policajka.</p>"]},{"s":"Профессии: он и она","t":"On je moj komšija, a ona je moja ___.","ru":"Он мой сосед, а она моя соседка.","o":["komšinica","komšija","komšijka"],"ai":0,"why":["<p>Правильно: <code>{{sr:komšinica}}</code></p><p>komšija → komšinica.</p>","<p>Правильно: <code>{{sr:komšinica}}</code></p><p>komšija → komšinica.</p>","<p>Правильно: <code>{{sr:komšinica}}</code></p><p>komšija → komšinica.</p>"]},{"s":"Профессии: он и она","t":"On je moj kolega, a ona je moja ___.","ru":"Он мой коллега, а она моя коллега.","o":["koleginica","kolega","kolegika"],"ai":0,"why":["<p>Правильно: <code>{{sr:koleginica}}</code></p><p>kolega → koleginica.</p>","<p>Правильно: <code>{{sr:koleginica}}</code></p><p>kolega → koleginica.</p>","<p>Правильно: <code>{{sr:koleginica}}</code></p><p>kolega → koleginica.</p>"]},{"s":"Профессии: он и она","t":"On je programer, a ona je ___.","ru":"Он программист, а она программистка.","o":["programerka","programerkinja","programera"],"ai":0,"why":["<p>Правильно: <code>{{sr:programerka}}</code></p><p>programer → programerka.</p>","<p>Правильно: <code>{{sr:programerka}}</code></p><p>programer → programerka.</p>","<p>Правильно: <code>{{sr:programerka}}</code></p><p>programer → programerka.</p>"]},{"s":"Профессии: он и она","t":"On je penzioner, a ona je ___.","ru":"Он пенсионер, а она пенсионерка.","o":["penzionerka","penzionerkinja","penzionera"],"ai":0,"why":["<p>Правильно: <code>{{sr:penzionerka}}</code></p><p>penzioner → penzionerka.</p>","<p>Правильно: <code>{{sr:penzionerka}}</code></p><p>penzioner → penzionerka.</p>","<p>Правильно: <code>{{sr:penzionerka}}</code></p><p>penzioner → penzionerka.</p>"]}];
+const STAGE_ORDER = ["Какого рода?","moj, tvoj, naš, vaš","Множественное число","Профессии: он и она"], PICK_N = 0;
+const NONE = "без se";
+function fillOf(q) { const f = q.f !== undefined ? q.f : q.o[q.ai]; return f === NONE ? "" : f; }
+const whyHTML = (q, i) => q.why[i].replace(/\{\{sr:(.*?)\}\}/g, (_, t) => stressHTML(t, null, false));
+// Word-order items: tap the words in order, then check against every accepted order
+const capFirst = x => x.charAt(0).toUpperCase() + x.slice(1);
+const normS = x => x.toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ").trim();
+let built = [];
+function renderOrder(q) {
+  built = [];
+  let order = shuffle(q.w.map((_, i) => i));
+  if (q.w.length > 1 && q.a.some(x => normS(x) === normS(order.map(i => q.w[i]).join(" ")))) order = order.slice(1).concat(order[0]);
+  app.innerHTML = `
+    <div class="bar"><span>${idx + 1} / ${queue.length}</span><div class="track"><div class="fill" style="width:${idx / queue.length * 100}%"></div></div><span>✓ ${correct}</span></div>
+    <section class="card" aria-live="polite">
+      <span class="stage-tag">${q.s}</span>
+      <p class="sentence noconv">Собери: «${q.ru}»</p>
+      <div class="built" id="built"></div>
+      <div id="parse"></div>
+    </section>
+    <div class="tiles" id="tiles">${order.map(i => `<button class="tile" data-i="${i}">${stressHTML(q.w[i], null, false)}</button>`).join("")}</div>
+    <div class="actions" id="oact"><button class="btn" id="check" disabled>Проверить</button><button class="btn ghost" id="undo" disabled>Убрать последнее</button></div>
+    <div id="fb"></div>
+    <p class="keys noconv">Нажимай на слова по порядку. Слово в собранной строке можно нажать, чтобы убрать его.</p>`;
+  app.querySelectorAll("#tiles .tile").forEach(b => b.addEventListener("click", () => {
+    if (answered || b.disabled) return;
+    built.push(+b.dataset.i); b.disabled = true; drawBuilt(q);
+  }));
+  document.getElementById("check").addEventListener("click", () => checkOrder(q));
+  document.getElementById("undo").addEventListener("click", () => { if (built.length) unbuild(q, built.length - 1); });
+  drawBuilt(q);
+  applyScript(app);
+}
+function unbuild(q, k) {
+  const i = built.splice(k, 1)[0];
+  document.querySelector(`#tiles .tile[data-i="${i}"]`).disabled = false;
+  drawBuilt(q);
+}
+function drawBuilt(q) {
+  const el = document.getElementById("built");
+  el.innerHTML = built.length
+    ? built.map((i, k) => `<button class="tile in" data-k="${k}">${stressHTML(k === 0 ? capFirst(q.w[i]) : q.w[i], null, false)}</button>`).join("") + (built.length === q.w.length ? `<span class="end">${q.end}</span>` : "")
+    : `<span class="ph noconv">Нажимай на слова ниже</span>`;
+  el.querySelectorAll(".tile").forEach(b => b.addEventListener("click", () => { if (!answered) unbuild(q, +b.dataset.k); }));
+  const full = built.length === q.w.length;
+  document.getElementById("check").disabled = !full;
+  document.getElementById("undo").disabled = !built.length;
+  applyScript(el);
+  if (full) document.getElementById("check").focus();
+}
+function checkOrder(q) {
+  if (answered) return;
+  answered = true;
+  const said = built.map(i => q.w[i]).join(" ");
+  const hit = q.a.findIndex(x => normS(x) === normS(said)), ok = hit >= 0;
+  document.getElementById("tiles").hidden = true;
+  document.getElementById("oact").hidden = true;
+  const el = document.getElementById("built");
+  el.classList.add(ok ? "ok" : "no");
+  el.querySelectorAll(".tile").forEach(b => b.disabled = true);
+  const shown = ok ? q.a[hit] : q.a[0];
+  document.getElementById("parse").innerHTML = breakdownHTML(shown, q.g);
+  const others = q.a.filter(x => x !== shown);
+  const alt = others.length ? `<p>Можно и так: ${others.map(x => `<code>${stressHTML(x, null, false)}</code>`).join(", ")}</p>` : "";
+  let html;
+  if (ok) {
+    correct++;
+    html = `<div class="fb ok"><h3>Верно!</h3>${alt}</div>`;
+  } else {
+    misses.push(q);
+    html = `<div class="fb no"><h3>Не совсем</h3><p>Правильно: <code>${stressHTML(q.a[0], null, false)}</code></p>${alt}${q.n ? `<p>${q.n}</p>` : ""}</div>`;
+  }
+  const last = idx === queue.length - 1;
+  document.getElementById("fb").innerHTML = html +
+    `<div class="actions" style="margin-top:12px"><button class="btn" id="next">${last ? "Результат" : "Дальше"}</button></div>`;
+  const nb = document.getElementById("next");
+  nb.addEventListener("click", next);
+  applyScript(app);
+  if (last) clearProg(); else saveProg(idx + 1);
+  nb.focus();
+}
+
+const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "вы", oni: "они" };
+// Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
+const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
+const LEX = {
+  udžbenik: ["N", "учебник"], ranac: ["N", "рюкзак"], stolica: ["N", "стул"], olovka: ["N", "карандаш"], tabla: ["N", "доска"], učionica: ["N", "класс (комната)"], mesto: ["N", "место"], slovo: ["N", "буква"],
+  ime: ["N", "имя"], prezime: ["N", "фамилия"], more: ["N", "море"], posao: ["N", "работа"], kolega: ["N", "коллега"], taksi: ["N", "такси"], reč: ["N", "слово"], stvar: ["N", "вещь"], so: ["N", "соль"],
+  torba: ["N", "сумка"], sveska: ["N", "тетрадь"], selo: ["N", "деревня"], profesor: ["N", "преподаватель"], stranac: ["N", "иностранец"], stranci: ["N", "иностранцы"], učenik: ["N", "ученик"], učenici: ["N", "ученики"],
+  dijalog: ["N", "диалог"], dijalozi: ["N", "диалоги"], grad: ["N", "город"], gradovi: ["N", "города"], stolovi: ["N", "столы"], broj: ["N", "номер, число"], brojevi: ["N", "номера, числа"], dani: ["N", "дни"],
+  đak: ["N", "школьник"], đaci: ["N", "школьники"], turista: ["N", "турист"], ulica: ["N", "улица"], ulice: ["N", "улицы"], torbe: ["N", "сумки"], stvari: ["N", "вещи"], slova: ["N", "буквы"], imena: ["N", "имена"], prezimena: ["N", "фамилии"],
+  lekar: ["N", "врач"], lekarka: ["N", "врач (женщина)"], profesorka: ["N", "преподавательница"], učitelj: ["N", "учитель"], učiteljica: ["N", "учительница"], konobar: ["N", "официант"], konobarica: ["N", "официантка"],
+  kuvar: ["N", "повар"], kuvarica: ["N", "повариха"], pevač: ["N", "певец"], pevačica: ["N", "певица"], učenica: ["N", "ученица"], službenik: ["N", "служащий"], službenica: ["N", "служащая"], studentkinja: ["N", "студентка"],
+  ekonomista: ["N", "экономист"], ekonomistkinja: ["N", "экономист (женщина)"], policajac: ["N", "полицейский"], policajka: ["N", "полицейская"], komšinica: ["N", "соседка"], koleginica: ["N", "коллега (женщина)"],
+  programer: ["N", "программист"], programerka: ["N", "программистка"], penzioner: ["N", "пенсионер"], penzionerka: ["N", "пенсионерка"],
+  moje: ["P", "моё"], tvoje: ["P", "твоё"], naš: ["P", "наш"], naša: ["P", "наша"], naše: ["P", "наше"], vaša: ["P", "ваша"], a: ["C", "а"],
+  vas: ["P", "вас (molim vas = пожалуйста)"],
+  jedan: ["M", "один"], jedna: ["M", "одна"], jedno: ["M", "одно"], jednu: ["M", "одну"], dva: ["M", "два"], tri: ["M", "три"], četiri: ["M", "четыре"],
+  jedanaest: ["M", "одиннадцать"], dvanaest: ["M", "двенадцать"], četrnaest: ["M", "четырнадцать"], petnaest: ["M", "пятнадцать"], šesnaest: ["M", "шестнадцать"], devetnaest: ["M", "девятнадцать"],
+  dvadeset: ["M", "двадцать"], trideset: ["M", "тридцать"], četrdeset: ["M", "сорок"], pedeset: ["M", "пятьдесят"], šezdeset: ["M", "шестьдесят"], devedeset: ["M", "девяносто"],
+  sto: ["M", "сто"], dvesta: ["M", "двести"], trista: ["M", "триста"], četiristo: ["M", "четыреста"], petsto: ["M", "пятьсот"], devetsto: ["M", "девятьсот"],
+  hiljadu: ["M", "тысячу"], hiljade: ["M", "тысячи (после 2–4)"], hiljada: ["M", "тысяча, тысяч"],
+  petog: ["M", "пятого"], drugog: ["M", "второго"], trećeg: ["M", "третьего"], trećem: ["M", "третьем"], dvadesetog: ["M", "двадцатого"], devetnaesti: ["M", "девятнадцатый"], devedesete: ["M", "девяностого"], šesta: ["M", "шестая"], "21": ["M", "21. = dvadeset prvi (21-й)"],
+  soba: ["N", "комната"], sobi: ["N", "комнате"], krevet: ["N", "кровать"], brata: ["N", "брата (brat = брат)"], mačke: ["N", "кошки"], autobus: ["N", "автобус"], minuta: ["N", "минут"], sin: ["N", "сын"],
+  godina: ["N", "год, лет"], godinu: ["N", "год (один)"], godine: ["N", "года"], meseci: ["N", "месяцев"], mesec: ["N", "месяц"], mesecu: ["N", "месяце (u mesecu = в месяце)"],
+  zgrada: ["N", "здание, дом"], spratova: ["N", "этажей"], spratu: ["N", "этаже"], kurs: ["N", "курс"], grupi: ["N", "группе"], dinara: ["N", "динаров, динара"], sat: ["N", "час"], sata: ["N", "часа"], sati: ["N", "часов"],
+  baka: ["N", "бабушка"], kafa: ["N", "кофе"], depozit: ["N", "залог, депозит"], telefon: ["N", "телефон"], agencija: ["N", "агентство"], stanova: ["N", "квартир"], hotel: ["N", "гостиница"], evro: ["N", "евро"],
+  sastanak: ["N", "встреча"], zahtev: ["N", "заявление, запрос"], oktobra: ["N", "октября"], oktobar: ["N", "октябрь"], maja: ["N", "мая"], novembra: ["N", "ноября"], januara: ["N", "января"], decembra: ["N", "декабря"], avgusta: ["N", "августа"], mart: ["N", "март"],
+  karte: ["N", "билеты"], para: ["N", "денег (от pare)"], pare: ["N", "деньги (разг.)"], novac: ["N", "деньги"], kartici: ["N", "карте"], računu: ["N", "счёте"], plaćanje: ["N", "оплата, платёж"], kirije: ["N", "аренды"],
+  uplata: ["N", "платёж, поступление денег"], struju: ["N", "электричество"], kusur: ["N", "сдача"], bankomat: ["N", "банкомат"], proviziju: ["N", "комиссию"], odsto: ["N", "процент(ов)"], uplatnicu: ["N", "квитанцию для оплаты"], pošti: ["N", "почте"],
+  kuća: ["N", "дом"], noć: ["N", "ночь"], pomoć: ["N", "помощь"], ćerka: ["N", "дочь"], čaj: ["N", "чай"], šećera: ["N", "сахара"], ključ: ["N", "ключ"], čovek: ["N", "человек"], rođendan: ["N", "день рождения"], džepu: ["N", "кармане"],
+  potpis: ["N", "подпись"], ulaz: ["N", "вход"], ispit: ["N", "экзамен"], pitanje: ["N", "вопрос"], torta: ["N", "торт"], oca: ["N", "отца"], predsednik: ["N", "президент"], biblioteka: ["N", "библиотека"], odeljenje: ["N", "отдел"], strance: ["N", "иностранцев"], kasi: ["N", "кассе"],
+  rus: ["N", "русский (человек)"], srpkinja: ["N", "сербка"], srbiji: ["N", "Сербии"], božić: ["N", "Рождество"], gospodine: ["N", "господин (обращение)"], petroviću: ["N", "Петрович (обращение)"], vremena: ["N", "времени"], redu: ["N", "порядке (u redu = в порядке)"],
+  hleb: ["N", "хлеб"], mleko: ["N", "молоко"], studenti: ["N", "студенты"], beograd: ["N", "Белград"],
+  imam: ["V", "имею, у меня есть"], dolazi: ["V", "приходит"], platite: ["V", "заплатите"], traje: ["V", "длится"], košta: ["V", "стоит (о цене)"], koštaju: ["V", "стоят (о цене)"], treba: ["V", "нужно"], čekam: ["V", "жду"],
+  poslat: ["V", "отправлен"], rođen: ["V", "родился (rođen sam)"], selim: ["V", "перевожу (selim se = переезжаю)"], važi: ["V", "действует"], stanujem: ["V", "живу (снимаю жильё)"], stigla: ["V", "пришла, прибыла"], stiže: ["V", "приходит, прибывает"],
+  izvolite: ["V", "пожалуйста, вот (когда даёшь)"], podignem: ["V", "сниму (деньги), подниму"], uzima: ["V", "берёт"], popunite: ["V", "заполните"], govorim: ["V", "говорю"], molim: ["V", "прошу (molim vas = пожалуйста)"], potpišite: ["V", "подпишите"],
+  pošaljite: ["V", "пришлите"], idemo: ["V", "идём, едем"], neću: ["V", "не хочу, не буду"], zaboravite: ["V", "забудьте"], razgovaram: ["V", "разговариваю"], kasni: ["V", "опаздывает"], mislim: ["V", "думаю"], javi: ["V", "сообщи, позвони"],
+  dođeš: ["V", "придёшь"], kupujem: ["V", "покупаю"], daje: ["V", "даёт"],
+  nedeljno: ["D", "в неделю"], tamo: ["D", "туда, там"], uvek: ["D", "всегда"], hladno: ["D", "холодно"], teško: ["A", "трудное, тяжело"], moguće: ["A", "возможно"],
+  ova: ["P", "эта, этот"], sebe: ["P", "себя (kod sebe = с собой)"], vaš: ["P", "ваш"], taj: ["P", "этот, тот"], tvoj: ["P", "твой"], njegovog: ["P", "его"], ko: ["Q", "кто"], vam: ["P", "вам"], niko: ["P", "никто"], kim: ["P", "кем (ni sa kim = ни с кем)"], sve: ["P", "всё"], ga: ["P", "его"], kakav: ["Q", "какой"],
+  svakog: ["P", "каждого (svakog meseca = каждый месяц)"], srećan: ["A", "счастливый"], srećna: ["A", "счастливая"], laku: ["A", "спокойной (laku noć)"], besplatan: ["A", "бесплатный"], slatka: ["A", "сладкая"], gradska: ["A", "городская"], nova: ["A", "новая"],
+  poštovani: ["A", "уважаемый"], nevažno: ["A", "неважное"], bolestan: ["A", "больной"], dobar: ["A", "хороший"], veliki: ["A", "большой"], najbliži: ["A", "ближайший"],
+  bez: ["R", "без"], ili: ["C", "или"], zato: ["C", "поэтому (zato što = потому что)"], što: ["C", "что (zato što = потому что)"], kad: ["C", "когда"], ni: ["T", "ни"], hvala: ["T", "спасибо"], čemu: ["P", "чем (nema na čemu = не за что)"], zdravo: ["T", "привет"],
+  jesmo: ["V", "есть (мы), долгая форма"], srbije: ["N", "Сербии"], naši: ["P", "наши"], tvoji: ["P", "твои"], to: ["P", "это"], plaćeni: ["A", "оплачены"], skupa: ["A", "дорогая"],
+  problem: ["N", "проблема"], muž: ["N", "муж"], cenu: ["N", "цену"], koliko: ["Q", "сколько"],
+  zoveš: ["V", "зовёшь (kako se zoveš = как тебя зовут)"], zove: ["V", "зовёт (zove se = его/её зовут)"], zovemo: ["V", "зовём"], zovu: ["V", "зовут"],
+  budim: ["V", "бужу (budim se = просыпаюсь)"], budiš: ["V", "будишь (budiš se = просыпаешься)"], budi: ["V", "будит (budi se = просыпается)"], budite: ["V", "будите"],
+  tušira: ["V", "моет под душем (tušira se = принимает душ)"], selimo: ["V", "перевозим (selimo se = переезжаем)"], sele: ["V", "перевозят (sele se = переезжают)"], seli: ["V", "перевозит (seli se = переезжает)"], seliš: ["V", "перевозишь (seliš se = переезжаешь)"],
+  useljavaju: ["V", "вселяют (useljavaju se = въезжают)"], useljavamo: ["V", "вселяем (useljavamo se = въезжаем)"], useljavate: ["V", "вселяете (useljavate se = въезжаете)"], useljava: ["V", "вселяет (useljava se = въезжает)"],
+  odmaram: ["V", "отдыхаю (с se)"], odmaraš: ["V", "отдыхаешь (с se)"], odmara: ["V", "отдыхает (с se)"], odmaramo: ["V", "отдыхаем (с se)"], odmarate: ["V", "отдыхаете (с se)"], odmaraju: ["V", "отдыхают (с se)"],
+  sećam: ["V", "помню (с se)"], sećaš: ["V", "помнишь (с se)"], seća: ["V", "помнит (с se)"], sećaju: ["V", "помнят (с se)"],
+  igra: ["V", "играет"], igraš: ["V", "играешь"], igramo: ["V", "играем"], igraju: ["V", "играют"],
+  počinje: ["V", "начинается"], završava: ["V", "заканчивает (završava se = заканчивается)"], ostajem: ["V", "остаюсь"], nadam: ["V", "надеюсь (с se)"], smeješ: ["V", "смеёшься (с se)"],
+  bavi: ["V", "занимается (с se)"], bavim: ["V", "занимаюсь (с se)"], baviš: ["V", "занимаешься (с se)"], bave: ["V", "занимаются (с se)"],
+  osećam: ["V", "чувствую (osećam se = чувствую себя)"], osećaš: ["V", "чувствуешь (osećaš se = чувствуешь себя)"], oseća: ["V", "чувствует"], osećate: ["V", "чувствуете"],
+  šetam: ["V", "гуляю"], plašim: ["V", "пугаю (plašim se = боюсь)"], vraćam: ["V", "возвращаю (vraćam se = возвращаюсь)"], vraća: ["V", "возвращает (vraća se = возвращается)"], vraćamo: ["V", "возвращаем"], vraćate: ["V", "возвращаете"], vraćaju: ["V", "возвращают"],
+  dešava: ["V", "происходит (с se)"], vidimo: ["V", "видим (vidimo se = увидимся)"], vidite: ["V", "видите"], vide: ["V", "видят"], vidiš: ["V", "видишь"],
+  sviđa: ["V", "нравится (с se)"], izdaje: ["V", "сдаёт (izdaje se = сдаётся)"], kaže: ["V", "говорит, скажет (kaže se = говорится)"], puši: ["V", "курит (puši se = курят)"],
+  plaća: ["V", "платит (plaća se = оплачивается)"], plaćam: ["V", "плачу"], ide: ["V", "идёт (ide se = идут, добираются)"], iznajmljuju: ["V", "сдают (iznajmljuju se = сдаются)"],
+  ovo: ["P", "это"], svako: ["P", "каждый"], prvog: ["M", "первый (какого?)"], sedam: ["M", "семь"], osam: ["M", "восемь"], šest: ["M", "шесть"],
+  zašto: ["Q", "почему"], kada: ["Q", "когда"], zar: ["T", "разве (zar ne = не так ли)"],
+  ujutru: ["D", "утром"], vikendom: ["D", "по выходным"], subotom: ["D", "по субботам"], rano: ["D", "рано"], jako: ["D", "очень"], unapred: ["D", "заранее"], samo: ["D", "только"], brzo: ["D", "быстро"], posle: ["R", "после"],
+  subotu: ["N", "субботу"], marka: ["N", "Марко (кого?)"], parku: ["N", "парке"], momci: ["N", "парни"], fudbal: ["N", "футбол"], film: ["N", "фильм"], čas: ["N", "урок"],
+  sportom: ["N", "спортом"], veče: ["N", "вечер"], pasa: ["N", "собак"], sestra: ["N", "сестра"], dvorištu: ["N", "дворе"], dana: ["N", "дня"], selidbe: ["N", "переезда"],
+  nekretninama: ["N", "недвижимостью"], adrese: ["N", "адреса"], srpskom: ["N", "сербском (na srpskom = по-сербски)"], gotovinom: ["N", "наличными"], centra: ["N", "центра"], stanovi: ["N", "квартиры"],
+  ja: ["P", "я"], ti: ["P", "ты"], on: ["P", "он"], ona: ["P", "она / они (ср. р.)"], ono: ["P", "оно"], mi: ["P", "мы"], vi: ["P", "вы"], oni: ["P", "они"], one: ["P", "они (жен.)"],
+  nas: ["P", "нас"], nam: ["P", "нам"], ništa: ["P", "ничего"], moj: ["P", "мой"], moja: ["P", "моя"], tvoja: ["P", "твоя"], vaše: ["P", "вашего"], vaši: ["P", "ваши"], ovaj: ["P", "этот"], ovoj: ["P", "этом"], svaki: ["P", "каждый"],
+  sam: ["V", "есть (я)"], si: ["V", "есть (ты)"], je: ["V", "есть (он/она/оно)"], smo: ["V", "есть (мы)"], ste: ["V", "есть (вы)"], su: ["V", "есть (они)"],
+  nisam: ["V", "не есть (я)"], nisi: ["V", "не есть (ты)"], nije: ["V", "не есть (он/она)"], nismo: ["V", "не есть (мы)"], niste: ["V", "не есть (вы)"], nisu: ["V", "не есть (они)"],
+  jesam: ["V", "есть, да (я)"], jesi: ["V", "есть (ты), долгая форма"], jeste: ["V", "есть (вы), долгая форма"], jesu: ["V", "есть (они), долгая форма"],
+  radim: ["V", "работаю"], radiš: ["V", "работаешь"], radi: ["V", "работает"], radimo: ["V", "работаем"],
+  učim: ["V", "учу"], uče: ["V", "учатся"], učimo: ["V", "учим"],
+  gledamo: ["V", "смотрим"], gledaš: ["V", "смотришь"], gledaju: ["V", "смотрят"],
+  jedem: ["V", "ем"], jedeš: ["V", "ешь"], jedete: ["V", "едите"], jedu: ["V", "едят"],
+  ima: ["V", "имеет, есть"], imamo: ["V", "имеем, у нас есть"], imate: ["V", "имеете, у вас есть"], nema: ["V", "нет, не имеет"], nemam: ["V", "не имею, у меня нет"],
+  živim: ["V", "живу"], živi: ["V", "живёт"], žive: ["V", "живут"], živimo: ["V", "живём"],
+  govori: ["V", "говорит"], govorite: ["V", "говорите"], govore: ["V", "говорят"],
+  znam: ["V", "знаю"], zna: ["V", "знает"],
+  plaćamo: ["V", "платим"], plaćate: ["V", "платите"], plaćaju: ["V", "платят"], platim: ["V", "заплатить (я)"],
+  tražim: ["V", "ищу"], tražimo: ["V", "ищем"], čekamo: ["V", "ждём"],
+  razumem: ["V", "понимаю"], razumeju: ["V", "понимают"],
+  pijete: ["V", "пьёте"], piješ: ["V", "пить (ты)"], volim: ["V", "люблю"], volimo: ["V", "любим"], piše: ["V", "пишет"],
+  mogu: ["V", "могу / могут"], može: ["V", "может"], možete: ["V", "можете"],
+  hoću: ["V", "хочу"], hoćeš: ["V", "хочешь"], nećemo: ["V", "не хотим"],
+  idem: ["V", "иду"], ideš: ["V", "идёшь"], idu: ["V", "идут"],
+  zovem: ["V", "зову (zovem se = меня зовут)"], zovete: ["V", "зовёте (kako se zovete = как вас зовут)"],
+  dođe: ["V", "прийти (он)"], dođete: ["V", "прийти (вы)"], iznajmim: ["V", "снять в аренду (я)"],
+  se: ["T", "себя, -ся"], li: ["T", "ли (вопрос)"], ne: ["T", "не"],
+  i: ["C", "и"], ali: ["C", "но"],
+  u: ["R", "в"], na: ["R", "на"], iz: ["R", "из"], od: ["R", "от, с"], do: ["R", "до"], za: ["R", "для, на, по"], sa: ["R", "с"], kod: ["R", "у"],
+  gde: ["Q", "где / куда"], šta: ["Q", "что"], kako: ["Q", "как"], odakle: ["Q", "откуда"],
+  danas: ["D", "сегодня"], sutra: ["D", "завтра"], sad: ["D", "сейчас"], sada: ["D", "сейчас"], ovde: ["D", "здесь"], već: ["D", "уже"], još: ["D", "ещё"],
+  dobro: ["D", "хорошо"], veoma: ["D", "очень"], mesečno: ["D", "в месяц"], nedeljom: ["D", "по воскресеньям"], previše: ["D", "слишком много"], peške: ["D", "пешком"], online: ["D", "онлайн"], zajedno: ["D", "вместе"],
+  "450": ["M", "450"], dve: ["M", "две"], devet: ["M", "девять"], pet: ["M", "пять"], prvi: ["M", "первый"],
+  rusije: ["N", "России"], beograda: ["N", "Белграда"], beogradu: ["N", "Белграде"], srbiju: ["N", "Сербию"], sankt: ["N", "Санкт-"], peterburga: ["N", "Петербурга"], sadu: ["N", "Саде"],
+  marko: ["N", "Марко (имя)"], ana: ["N", "Ана (имя)"], mihail: ["N", "Михаил (имя)"], petrović: ["N", "Петрович (фамилия)"], jović: ["N", "Йович (фамилия)"],
+  komšija: ["N", "сосед"], komšije: ["N", "соседи"], vlasnik: ["N", "владелец"], stana: ["N", "квартиры"], stan: ["N", "квартира"], stanom: ["N", "квартирой"], stanu: ["N", "квартире"],
+  agent: ["N", "агент"], agenta: ["N", "агента"], nekretnine: ["N", "недвижимость"], centru: ["N", "центре"], grada: ["N", "города"], stanari: ["N", "жильцы"],
+  kirija: ["N", "аренда"], kiriju: ["N", "аренду"], evra: ["N", "евро"], gospodin: ["N", "господин"], sestre: ["N", "сёстры"],
+  banka: ["N", "банк"], banci: ["N", "банке"], banke: ["N", "банка"], banku: ["N", "банк (куда?)"], računi: ["N", "счета"], račune: ["N", "счета"], račun: ["N", "счёт"],
+  stolu: ["N", "столе"], selidbu: ["N", "переезд"], dete: ["N", "ребёнок"], deca: ["N", "дети"], kupatilo: ["N", "ванная"], prijatelji: ["N", "друзья"],
+  žena: ["N", "жена"], ključevi: ["N", "ключи"], gazde: ["N", "хозяина"], gazda: ["N", "хозяин"], školi: ["N", "школе"], školu: ["N", "школу"],
+  pasoš: ["N", "паспорт"], ugovor: ["N", "договор"], torbi: ["N", "сумке"], klijent: ["N", "клиент"], student: ["N", "студент"], turisti: ["N", "туристы"],
+  internet: ["N", "интернет"], kući: ["N", "дому"], kuće: ["N", "дома (kod kuće = дома)"], kuhinji: ["N", "кухне"], pravu: ["N", "праве (u pravu = прав)"], put: ["N", "раз"], septembra: ["N", "сентября"],
+  televiziju: ["N", "телевизор"], doručak: ["N", "завтрак"], parking: ["N", "парковка"], sobe: ["N", "комнаты"], psa: ["N", "собаку"], roditelji: ["N", "родители"], adresu: ["N", "адрес"],
+  majstora: ["N", "мастера"], slatkiša: ["N", "сладкого"], kraj: ["N", "район"], kafu: ["N", "кофе"], karticom: ["N", "картой"], meso: ["N", "мясо"], poruke: ["N", "сообщения"],
+  početkom: ["N", "в начале"], meseca: ["N", "месяца"], ponedeljak: ["N", "понедельник"], lift: ["N", "лифт"], dan: ["N", "день"],
+  novi: ["A", "новый, новые"], novom: ["A", "Новом"], ljubazni: ["A", "любезные"], zatvorena: ["A", "закрыт(а)"], spremni: ["A", "готовы"], zauzeti: ["A", "заняты"], bolesno: ["A", "больное"],
+  čisto: ["A", "чистое"], zadovoljni: ["A", "довольны"], skup: ["A", "дорогой"], dužni: ["A", "должны"], uključen: ["A", "включён"], slobodan: ["A", "свободный"], umoran: ["A", "уставший"],
+  "zadovoljan/zadovoljna": ["A", "доволен/довольна"], "nov/nova": ["A", "новый/новая"], "kriv/kriva": ["A", "виноват(а)"], "siguran/sigurna": ["A", "уверен(а)"], "spreman/spremna": ["A", "готов(а)"], "umoran/umorna": ["A", "устал(а)"]
+};
+const BITI_F = ["sam", "si", "je", "smo", "ste", "su", "nisam", "nisi", "nije", "nismo", "niste", "nisu"];
+function analyze(text, over) {
+  const toks = text.replace(/<br>/g, " ").split(/[\s.,?!—]+/).filter(w => /\p{L}|\d/u.test(w));
+  const raw = text.replace(/<br>/g, " ");
+  return toks.map((w, i) => {
+    const lw = w.toLowerCase(), prev = (toks[i - 1] || "").toLowerCase(), nxt = (toks[i + 1] || "").toLowerCase();
+    let e = (over && over[lw]) || LEX[lw];
+    if (lw === "da") e = nxt === "li" ? ["T", "da li = вопрос «ли»"] : new RegExp("\\bda,", "i").test(raw) ? ["T", "да"] : ["C", "чтобы, что (связка)"];
+    if (lw === "malo") e = BITI_F.includes(prev) ? ["A", "маленькая(-ое)"] : ["D", "немного"];
+    if (["ruski", "srpski", "engleski"].includes(lw)) {
+      const ru = { ruski: "русский", srpski: "сербский", engleski: "английский" }[lw];
+      e = toks.slice(0, i).some(t => /^(govor|razum)/i.test(t)) ? ["D", "по-" + ru.slice(0, -2) + "и"] : ["A", ru + " (язык)"];
+    }
+    return { w, pos: e ? e[0] : "", ru: e ? e[1] : "" };
+  });
+}
+// Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
+// so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
+const STRESS = {
+  udžbenik: 1, stolica: 1, olovka: 1, prezime: 1, kolega: 1, profesor: 2, učenik: 1, učenici: 1, gradovi: 1, stolovi: 1, brojevi: 1, turista: 2, lekarka: 1, profesorka: 2, učitelj: 1, konobar: 1,
+  kuvarica: 1, pevačica: 1, učenica: 1, službenik: 1, službenica: 1, policajac: 2, policajka: 2, imena: 1, učionica: 0, dijalog: 0, dijalozi: 0, prezimena: 0, učiteljica: 0, konobarica: 0,
+  studentkinja: 0, ekonomista: 0, ekonomistkinja: 0, komšinica: 0, koleginica: 0, programer: 0, programerka: 0, penzioner: 0, penzionerka: 0,
+  jedanaest: 2, četrnaest: 2, devetnaest: 2, devetnaesti: 2, četrdeset: 3, pedeset: 2, šezdeset: 2, devedeset: 3, dvadeset: 1, trideset: 1, četiristo: 1, četiri: 1,
+  hiljadu: 1, hiljade: 1, hiljada: 1, dvadesetog: 0, devedesete: 0, godina: 1, godinu: 1, godine: 1, meseci: 1, mesecu: 1, dolazi: 1, platite: 1, nedeljno: 1,
+  oktobra: 1, oktobar: 1, novembra: 1, januara: 1, decembra: 1, avgusta: 1, septembra: 1, sastanak: 1, stanujem: 1, koštaju: 1, kartici: 1, računu: 1, plaćanje: 1, moguće: 1, kirije: 1, uplata: 1,
+  izvolite: 2, podignem: 1, popunite: 1, uplatnicu: 1, šećera: 1, rođendan: 1, govorim: 1, potpišite: 2, pitanje: 1, njegovog: 1, predsednik: 1, pošaljite: 1, srpkinja: 1, srbiji: 1,
+  poštovani: 1, gospodine: 1, petroviću: 1, vremena: 1, zaboravite: 2, bolestan: 1, razgovaram: 2, kupujem: 1, veliki: 1, beograd: 1, autobus: 1, telefon: 1, agencija: 2, proviziju: 2,
+  minuta: 0, spratova: 0, depozit: 0, stanova: 0, bankomat: 0, najbliži: 0, besplatan: 0, biblioteka: 0, odeljenje: 0, studenti: 0, nevažno: 0,
+  plaćeni: 1, koliko: 1, srbije: 1,
+  subotu: 1, subotom: 1, useljavamo: 2, iznajmljuju: 2, odmaram: 1, odmaraš: 1, odmara: 1, odmaramo: 1, odmarate: 1, odmaraju: 1, sećaju: 1, osećam: 1, osećaš: 1, oseća: 1, osećate: 1,
+  igraju: 1, igramo: 1, počinje: 1, završava: 2, ostajem: 1, vraćamo: 1, vraćate: 1, vraćaju: 1, vidimo: 1, vidite: 1, izdaje: 1, budite: 1,
+  dvorištu: 1, selidbe: 2, nekretninama: 3, unapred: 1, vikendom: 1, stanovi: 1, tušira: 0, dešava: 0, useljavaju: 0, useljavate: 0, useljava: 0, gotovinom: 0,
+  radimo: 1, učimo: 1, gledamo: 1, gledaju: 1, jedete: 1, imamo: 1, imate: 1, živimo: 1, govori: 1, govorite: 1, govore: 1,
+  plaćamo: 1, plaćate: 1, plaćaju: 1, tražimo: 1, čekamo: 1, razumem: 1, razumeju: 2, pijete: 1, volimo: 1, možete: 1,
+  nećemo: 1, zovete: 1, dođete: 1, iznajmim: 2, odakle: 1, veoma: 1, mesečno: 1, nedeljom: 1, previše: 1, online: 0,
+  zajedno: 1, rusije: 1, beograda: 2, beogradu: 2, srbiju: 1, peterburga: 1, mihail: 1, petrović: 1, komšija: 1, komšije: 1,
+  agenta: 2, nekretnine: 3, stanari: 2, kirija: 1, kiriju: 1, gospodin: 1, računi: 1, račune: 1, selidbu: 2, kupatilo: 2,
+  prijatelji: 1, ključevi: 1, ugovor: 1, turisti: 2, internet: 1, kuhinji: 1, televiziju: 3, doručak: 1,
+  roditelji: 1, adresu: 1, majstora: 1, slatkiša: 2, karticom: 1, poruke: 1, početkom: 1, meseca: 1, ponedeljak: 2,
+  ljubazni: 1, zatvorena: 1, zauzeti: 1, bolesno: 1, zadovoljni: 1, uključen: 1, slobodan: 1, umoran: 1, umorna: 1,
+  zadovoljan: 1, zadovoljna: 1, siguran: 1, sigurna: 1, engleski: 1
+};
+// Clitics and short function words carry no stress of their own
+const UNSTRESSED = new Set(["sam", "si", "je", "smo", "ste", "su", "li", "se", "i", "u", "na", "iz", "od", "do", "za", "sa", "kod", "da", "ne", "ali", "mi", "nam", "nas"]);
+function nuclei(w) {
+  const V = c => c && "aeiou".includes(c), out = [];
+  for (let i = 0; i < w.length; i++) {
+    const c = w[i];
+    if (V(c)) out.push(i);
+    else if (c === "r" && !V(w[i - 1]) && !V(w[i + 1]) && w[i + 1] && /\p{L}/u.test(w[i + 1])) out.push(i);
+  }
+  return out;
+}
+// Index of the stressed letter in a word, or -1. mono === false skips one-syllable words
+function stressAt(word, mono) {
+  const low = word.toLowerCase(), nu = nuclei(low);
+  if (UNSTRESSED.has(low) || !nu.length) return -1;
+  if (mono === false && nu.length === 1 && !(low in STRESS)) return -1;
+  const n = low in STRESS ? STRESS[low] : (nu.length <= 2 ? 1 : 0);
+  return n && nu[n - 1] !== undefined ? nu[n - 1] : -1;
+}
+function stressHTML(text, conv, mono) {
+  conv = conv || (x => x);
+  return String(text).split(/(\s+|\/)/).map(tok => {
+    const m = tok.match(/^([^\p{L}]*)(\p{L}+)([^\p{L}]*)$/u);
+    if (!m) return conv(esc(tok));
+    const [, pre, word, post] = m, at = stressAt(word, mono);
+    if (at < 0) return conv(esc(tok));
+    return conv(esc(pre)) + `<span class="nw">` + conv(esc(word.slice(0, at))) + `<span class="st${word[at] !== word[at].toLowerCase() ? " up" : ""}${conv(word[at]) === "i" ? " i" : ""}">${conv(esc(word[at]))}</span>` + conv(esc(word.slice(at + 1))) + `</span>` + conv(esc(post));
+  }).join("");
+}
+// Sentence with a gap: whole words get stress marks; the gapped word is marked once filled
+function sentenceHTML(t, fill, cls) {
+  return t.split(/(<br>|\s+)/).map(tok => {
+    if (tok === "<br>") return "<br>";
+    if (!tok.includes("___")) return stressHTML(tok, null, false);
+    const pos = tok.indexOf("___");
+    if (fill == null) return esc(tok.slice(0, pos)) + '<span class="blank" id="blank">&nbsp;</span>' + esc(tok.slice(pos + 3));
+    const full = tok.slice(0, pos) + fill + tok.slice(pos + 3), m = full.match(/\p{L}+/u);
+    const sa = m ? stressAt(m[0], false) : -1, at = sa < 0 ? -1 : m.index + sa, a = pos, b = pos + fill.length;
+    let h = '<span class="nw">';
+    for (let i = 0; i <= full.length; i++) {
+      if (i === b) h += "</span>";
+      if (i === a) h += `<span class="blank ${cls}" id="blank">`;
+      if (i < full.length) h += i === at ? `<span class="st${full[i] !== full[i].toLowerCase() ? " up" : ""}${full[i] === "i" ? " i" : ""}">${esc(full[i])}</span>` : esc(full[i]);
+    }
+    return h + "</span>";
+  }).join("");
+}
+
+// Personal dictionary shared with recnik.html (same site => same browser storage)
+const DICT_KEY = "srpski-recnik-words";
+function dictLoad() { try { return JSON.parse(localStorage.getItem(DICT_KEY) || "[]"); } catch (e) { return []; } }
+const dictKey = (sr, ru) => (sr + "|" + ru).toLowerCase();
+function dictHas(sr, ru) { return dictLoad().some(w => dictKey(w.sr, w.ru) === dictKey(sr, ru)); }
+function dictAdd(sr, ru, ex) {
+  const list = dictLoad();
+  if (list.some(w => dictKey(w.sr, w.ru) === dictKey(sr, ru))) return true;
+  list.push({ id: "w" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), sr, ru, ex, box: 0, right: 0, wrong: 0, added: Date.now() });
+  try { localStorage.setItem(DICT_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+}
+let lastParse = null;
+function breakdownHTML(text, over) {
+  const toks = analyze(text, over);
+  const ex = text.replace(/<br>/g, " ").replace(/\s+/g, " ").trim();
+  lastParse = toks.map((t, i) => {
+    const sr = i > 0 && t.w[0] !== t.w[0].toLowerCase() ? t.w : t.w.toLowerCase();
+    return { sr, ru: t.ru, ex };
+  });
+  return `<div class="parse"><span class="parse-h">Разбор <span class="st-note">· красный знак над ударной гласной </span>· нажми на слово, чтобы добавить его в <a href="recnik.html" class="noconv">словарь</a></span><div class="chips">` + toks.map((t, i) => {
+    const saved = t.ru && dictHas(lastParse[i].sr, t.ru);
+    return `<button type="button" class="chip pos-${t.pos}${saved ? " saved" : ""}" data-i="${i}" ${t.ru ? "" : "disabled"} title="${saved ? "Уже в словаре" : "Добавить в словарь"}"><span class="cw">${stressHTML(t.w)}</span><span class="cp">${POS[t.pos] || ""}</span><span class="cr">${t.ru}</span><span class="cs noconv">${saved ? "в словаре ✓" : "+ в словарь"}</span></button>`;
+  }).join("") + `</div></div>`;
+}
+document.addEventListener("click", e => {
+  const c = e.target.closest && e.target.closest(".chip[data-i]");
+  if (!c || !lastParse || c.classList.contains("saved")) return;
+  const t = lastParse[+c.dataset.i];
+  if (!t || !t.ru) return;
+  const ok = dictAdd(t.sr, t.ru, t.ex);
+  const lab = c.querySelector(".cs");
+  if (ok) { c.classList.add("saved"); lab.textContent = "в словаре ✓"; c.title = "Уже в словаре"; }
+  else lab.textContent = "не сохранилось";
+});
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function build(list) {
+  if (!STAGE_ORDER.length) return shuffle(list).slice(0, list === ITEMS ? PICK_N : list.length);
+  return STAGE_ORDER.flatMap(s => shuffle(list.filter(x => x.s === s)));
+}
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const app = document.getElementById("app");
+let queue = [], idx = 0, correct = 0, misses = [], answered = false, qScript = [], inResult = false;
+
+// For the mixed mode: runs of 1–4 questions, alternating Latin and Cyrillic, random start
+function makeRuns(n) {
+  const out = [];
+  let s = Math.random() < 0.5 ? "lat" : "cyr";
+  while (out.length < n) {
+    const len = 1 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < len && out.length < n; i++) out.push(s);
+    s = s === "lat" ? "cyr" : "lat";
+  }
+  return out;
+}
+
+const PROG_KEY = "rod-progress";
+function start(list) {
+  queue = build(list); qScript = makeRuns(queue.length); idx = 0; correct = 0; misses = []; inResult = false; render(); saveProg(0);
+}
+
+// Unfinished run is kept in this browser so it can be resumed; each topic keeps its own
+const progKey = (t = topic) => t === "all" ? PROG_KEY : PROG_KEY + ":" + t;
+function saveProg(at) {
+  try { localStorage.setItem(progKey(), JSON.stringify({ q: queue.map(x => ITEMS.indexOf(x)), s: qScript, i: at, c: correct, m: misses.map(x => ITEMS.indexOf(x)) })); } catch (e) {}
+  renderTopics();
+}
+function clearProg() { try { localStorage.removeItem(progKey()); } catch (e) {} renderTopics(); }
+function loadProg(t) {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(progKey(t)) || "null"); } catch (e) {}
+  return p && Array.isArray(p.q) && p.i > 0 && p.i < p.q.length && !p.q.some(i => !ITEMS[i]) ? p : null;
+}
+function resumeFrom(p) {
+  queue = p.q.map(i => ITEMS[i]); qScript = p.s && p.s.length === queue.length ? p.s : makeRuns(queue.length);
+  idx = p.i; correct = p.c || 0; misses = (p.m || []).map(i => ITEMS[i]).filter(Boolean); inResult = false; render();
+}
+function resumeOffer() {
+  const p = loadProg();
+  if (!p) return false;
+  app.innerHTML = `
+    <section class="card result noconv">
+      <h3 style="margin:0">Тест не закончен</h3>
+      <p style="margin:0">Ты остановился на вопросе ${p.i + 1} из ${p.q.length}, верных ответов пока ${p.c}.</p>
+      <div class="actions">
+        <button class="btn" id="resume">Продолжить</button>
+        <button class="btn ghost" id="restart">Начать заново</button>
+      </div>
+    </section>`;
+  document.getElementById("resume").addEventListener("click", () => resumeFrom(p));
+  document.getElementById("restart").addEventListener("click", () => { clearProg(); start(pool()); });
+  document.getElementById("resume").focus();
+  return true;
+}
+
+function render() {
+  answered = false;
+  const q = queue[idx];
+  if (q.k === "order") return renderOrder(q);
+  const pick = q.k === "pick";
+  const opts = pick ? q.o.map((t, i) => ({ t, i })) : q.o.map((t, i) => ({ t, i }));
+  const sentence = pick
+    ? (q.q ? esc(q.q) : `Как сказать: «${q.ru}»`)
+    : (q.h ? `<span class="hint">(${q.h}${HRU[q.h] ? " = " + HRU[q.h] : ""})</span> ` : "") + `<span id="sbody">${sentenceHTML(q.t)}</span>`;
+  app.innerHTML = `
+    <div class="bar"><span>${idx + 1} / ${queue.length}</span><div class="track"><div class="fill" style="width:${idx / queue.length * 100}%"></div></div><span>✓ ${correct}</span></div>
+    <section class="card" aria-live="polite">
+      <span class="stage-tag">${q.s}</span>
+      <p class="sentence">${sentence}</p>
+      ${pick ? (q.q ? `<p class="ru">${q.ru}</p>` : "") : `<p class="ru" id="ru" hidden>${q.ru}</p>`}
+      <div id="parse"></div>
+    </section>
+    <div class="opts ${pick ? "wide" : ""}" id="opts">
+      ${opts.map(o => `<button class="opt" id="opt${o.i}" data-i="${o.i}"><span class="k">${o.i + 1}</span><span>${stressHTML(o.t, null, false)}</span></button>`).join("")}
+    </div>
+    <div id="fb"></div>
+    <p class="keys noconv">Можно отвечать цифрами на клавиатуре, Enter переходит дальше.</p>`;
+  app.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => choose(+b.dataset.i)));
+  applyScript(app);
+}
+
+function choose(i) {
+  if (answered) return;
+  answered = true;
+  const q = queue[idx];
+  const pick = q.k === "pick";
+  const rightIdx = q.ai;
+  const ok = i === rightIdx;
+  app.querySelectorAll(".opt").forEach(b => b.disabled = true);
+  document.getElementById("opt" + rightIdx).classList.add("ok");
+  if (!ok) document.getElementById("opt" + i).classList.add("no");
+  const fill = fillOf(q);
+  if (!pick) {
+    document.getElementById("sbody").innerHTML = sentenceHTML(q.t, fill || "—", ok ? "ok" : "no");
+    document.getElementById("ru").hidden = false;
+  }
+  const full = pick ? q.o[q.ai] : fill ? q.t.replace("___", fill) : q.t.replace(/___ ?/, "");
+  document.getElementById("parse").innerHTML = breakdownHTML(full, q.g);
+  let html;
+  if (ok) {
+    correct++;
+    html = `<div class="fb ok"><h3>Верно!</h3>${pick ? `<p>${stressHTML(q.o[q.ai], null, false)}</p>` : ""}</div>`;
+  } else {
+    misses.push(q);
+    html = `<div class="fb no"><h3>Не совсем</h3>${whyHTML(q, i)}</div>`;
+  }
+  const last = idx === queue.length - 1;
+  document.getElementById("fb").innerHTML = html +
+    `<div class="actions" style="margin-top:12px"><button class="btn" id="next">${last ? "Результат" : "Дальше"}</button></div>`;
+  const nb = document.getElementById("next");
+  nb.addEventListener("click", next);
+  applyScript(app);
+  if (last) clearProg(); else saveProg(idx + 1);
+  nb.focus();
+}
+
+function next() {
+  if (idx < queue.length - 1) { idx++; render(); } else finish();
+}
+
+function plain(q) {
+  if (q.k === "order") return `<span class="s"><b>${esc(q.a[0])}</b></span><div class="r">${q.ru}</div>`;
+  if (q.k === "pick") return `<span class="s"><b>${esc(q.o[q.ai])}</b></span><div class="r">${q.ru}</div>`;
+  const f = fillOf(q);
+  const s = (f ? q.t.split("___").map(esc).join(`<b>${esc(f)}</b>`) : esc(q.t.replace(/___ ?/, ""))).replace(/&lt;br&gt;/g, " ");
+  return `<span class="s">${q.h ? `(${q.h}) ` : ""}${s}</span><div class="r">${q.ru}</div>`;
+}
+
+function finish() {
+  const total = queue.length, pct = Math.round(correct / total * 100);
+  if (total === pool().length) { try { localStorage.setItem(progKey() + ":done", JSON.stringify({ c: correct, n: total })); } catch (e) {} renderTopics(); }
+  const msg = pct === 100 ? "Без единой ошибки. Отлично!" : pct >= 85 ? "Очень хорошо. Повтори ошибки, и будет идеально." : pct >= 60 ? "Неплохо. Прогони ошибки ещё раз." : "Загляни в шпаргалку сверху и попробуй ещё раз.";
+  app.innerHTML = `
+    <section class="card result">
+      <p class="score">${correct}<small> из ${total} · ${pct}%</small></p>
+      <p style="margin:0">${msg}</p>
+      ${misses.length ? `<h3 style="margin:0">Где были ошибки</h3><ul class="miss">${misses.map(q => `<li>${plain(q)}</li>`).join("")}</ul>` : ""}
+      <div class="actions">
+        ${misses.length ? `<button class="btn" id="retry">Повторить ошибки (${misses.length})</button>` : ""}
+        <button class="btn ${misses.length ? "ghost" : ""}" id="again">Пройти заново</button>
+      </div>
+    </section>`;
+  const m = misses.slice();
+  const r = document.getElementById("retry");
+  if (r) { r.addEventListener("click", () => start(m)); r.focus(); }
+  document.getElementById("again").addEventListener("click", () => start(pool()));
+  inResult = true;
+  applyScript(app);
+}
+
+// Latin -> Serbian Cyrillic. Russian text has no Latin letters, so whole text nodes can be converted safely.
+const L2C = { lj: "љ", nj: "њ", "dž": "џ", a: "а", b: "б", c: "ц", "č": "ч", "ć": "ћ", d: "д", "đ": "ђ", e: "е", f: "ф", g: "г", h: "х", i: "и", j: "ј", k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", r: "р", s: "с", "š": "ш", t: "т", u: "у", v: "в", z: "з", "ž": "ж" };
+function toCyr(s) {
+  return s.replace(/lj|nj|dž|[a-zčćđšž]/gi, m => {
+    const c = L2C[m.toLowerCase()];
+    if (!c) return m;
+    return m[0] === m[0].toUpperCase() && m[0] !== m[0].toLowerCase() ? c.toUpperCase() : c;
+  });
+}
+let script = "mix";
+try { const v = localStorage.getItem("rod-script"); if (v === "lat" || v === "cyr") script = v; } catch (e) {}
+const base = () => script === "mix" ? "lat" : script;
+const cur = () => script !== "mix" ? script : (inResult ? "lat" : qScript[idx]);
+function applyScript(root, s = cur()) {
+  // the dot of i needs the stress mark higher; Cyrillic и has no dot
+  root.querySelectorAll(".st.i").forEach(e => e.classList.toggle("cy", s === "cyr"));
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest(".noconv") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
+  let n;
+  while ((n = w.nextNode())) {
+    if (n._lat === undefined) n._lat = n.nodeValue;
+    n.nodeValue = s === "cyr" ? toCyr(n._lat) : n._lat;
+  }
+}
+function setScript(s) {
+  script = s;
+  try { localStorage.setItem("rod-script", s); } catch (e) {}
+  ["mix", "lat", "cyr"].forEach(k => document.getElementById("sc-" + k).setAttribute("aria-pressed", s === k));
+  applyScript(document.querySelector(".wrap"), base());
+  applyScript(app);
+}
+document.getElementById("sc-mix").addEventListener("click", () => setScript("mix"));
+document.getElementById("sc-lat").addEventListener("click", () => setScript("lat"));
+document.getElementById("sc-cyr").addEventListener("click", () => setScript("cyr"));
+
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("summary")) return;
+  if (!queue.length || !document.getElementById("opts")) return;
+  const n = parseInt(e.key, 10);
+  if (!answered && n >= 1) {
+    const b = document.getElementById("opt" + (n - 1));
+    if (b) { e.preventDefault(); choose(n - 1); }
+  } else if (answered && e.key === "Enter" && document.activeElement?.id !== "next") {
+    e.preventDefault(); next();
+  }
+});
+
+// Topic picker: all questions in stage order, or one stage only
+const TOPIC_KEY = PROG_KEY + "-topic";
+const stageName = s => typeof STAGES !== "undefined" ? STAGES[s] : s;
+const TOPICS = [...new Set(ITEMS.map(x => x.s))];
+let topic = "all";
+try { const v = localStorage.getItem(TOPIC_KEY); if (v && TOPICS.map(String).includes(v)) topic = v; } catch (e) {}
+function pool() { return topic === "all" ? ITEMS : ITEMS.filter(x => String(x.s) === topic); }
+function renderTopics() {
+  const el = document.getElementById("topics");
+  if (typeof NO_TOPICS !== "undefined") { el.hidden = true; return; }
+  const badge = (k, n) => {
+    const p = loadProg(k);
+    if (p) return `${p.i}/${p.q.length}`;
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(progKey(k) + ":done") || "null"); } catch (e) {}
+    return d ? `✓ ${d.c}/${d.n}` : n;
+  };
+  el.innerHTML = [["all", "Все темы", ITEMS.length], ...TOPICS.map(s => [String(s), stageName(s), ITEMS.filter(x => x.s === s).length])]
+    .map(([k, l, n]) => `<button type="button" data-t="${k}" aria-pressed="${k === topic}">${l}<span class="n">${badge(k, n)}</span></button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    topic = b.dataset.t;
+    try { localStorage.setItem(TOPIC_KEY, topic); } catch (e) {}
+    renderTopics();
+    const p = loadProg();
+    if (p) resumeFrom(p); else start(pool());
+  }));
+}
+renderTopics();
+if (!resumeOffer()) start(pool());
+// Stress marks on/off, shared by all pages of the site
+let stressOn = true;
+try { stressOn = localStorage.getItem("srpski-stress") !== "off"; } catch (e) {}
+function setStress(on) {
+  stressOn = on;
+  try { localStorage.setItem("srpski-stress", on ? "on" : "off"); } catch (e) {}
+  document.body.classList.toggle("nostress", !on);
+  const b = document.getElementById("stress-tg");
+  b.setAttribute("aria-pressed", on);
+  b.textContent = on ? "Ударения: вкл" : "Ударения: выкл";
+}
+document.getElementById("stress-tg").addEventListener("click", () => setStress(!stressOn));
+setStress(stressOn);
+setScript(script);
+</script>
+
+</body>
+</html>
