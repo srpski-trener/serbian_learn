@@ -339,6 +339,10 @@ const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  knjiga: ["N", "книга"],
+  telefoni: ["N", "телефоны"], kompjuter: ["N", "компьютер"], kompjuteri: ["N", "компьютеры"], trg: ["N", "площадь"], trgovi: ["N", "площади"], most: ["N", "мост"], mostovi: ["N", "мосты"], poslovi: ["N", "работы, дела"],
+  miš: ["N", "мышь"], miševi: ["N", "мыши"], nož: ["N", "нож"], noževi: ["N", "ножи"], kolege: ["N", "коллеги"], tata: ["N", "папа"], tate: ["N", "папы"], deda: ["N", "дедушка"], dede: ["N", "дедушки"],
+  ministar: ["N", "министр"], ministri: ["N", "министры"], sastanci: ["N", "встречи"], orah: ["N", "орех"], orasi: ["N", "орехи"], knjige: ["N", "книги"], stolice: ["N", "стулья"], reči: ["N", "слова"], mesta: ["N", "места"], sela: ["N", "деревни"], mora: ["N", "моря"],
   udžbenik: ["N", "учебник"], ranac: ["N", "рюкзак"], stolica: ["N", "стул"], olovka: ["N", "карандаш"], tabla: ["N", "доска"], učionica: ["N", "класс (комната)"], mesto: ["N", "место"], slovo: ["N", "буква"],
   ime: ["N", "имя"], prezime: ["N", "фамилия"], more: ["N", "море"], posao: ["N", "работа"], kolega: ["N", "коллега"], taksi: ["N", "такси"], reč: ["N", "слово"], stvar: ["N", "вещь"], so: ["N", "соль"],
   torba: ["N", "сумка"], sveska: ["N", "тетрадь"], selo: ["N", "деревня"], profesor: ["N", "преподаватель"], stranac: ["N", "иностранец"], stranci: ["N", "иностранцы"], učenik: ["N", "ученик"], učenici: ["N", "ученики"],
@@ -464,6 +468,7 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  telefoni: 1, mostovi: 1, poslovi: 1, miševi: 1, noževi: 1, ministar: 1, sastanci: 1, orasi: 1, stolice: 1, trgovi: 1, kompjuter: 0, kompjuteri: 0,
   udžbenik: 1, stolica: 1, olovka: 1, prezime: 1, kolega: 1, profesor: 2, učenik: 1, učenici: 1, gradovi: 1, stolovi: 1, brojevi: 1, turista: 2, lekarka: 1, profesorka: 2, učitelj: 1, konobar: 1,
   kuvarica: 1, pevačica: 1, učenica: 1, službenik: 1, službenica: 1, policajac: 2, policajka: 2, imena: 1, učionica: 0, dijalog: 0, dijalozi: 0, prezimena: 0, učiteljica: 0, konobarica: 0,
   studentkinja: 0, ekonomista: 0, ekonomistkinja: 0, komšinica: 0, koleginica: 0, programer: 0, programerka: 0, penzioner: 0, penzionerka: 0,
