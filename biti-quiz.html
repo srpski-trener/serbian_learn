@@ -335,10 +335,12 @@ const ITEMS = [
 ];
 const STAGES = { 1: "Утверждение", 2: "Отрицание", 3: "Вопросы и ответы", 4: "Порядок слов" };
 
-const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "вы", oni: "они" };
+const HRU = { ja: "я", ti: "ты", on: "он", ona: "она", mi: "мы", vi: "вы", oni: "они", ono: "оно", one: "они (ж.)", Vi: "Вы, вежливо" };
 // Word-by-word breakdown shown after each answer. P pronoun, V verb, N noun, A adjective, D adverb, R preposition, C conjunction, T particle, M numeral, Q question word
 const POS = { P: "мест.", V: "глагол", N: "сущ.", A: "прил.", D: "нареч.", R: "предлог", C: "союз", T: "частица", M: "числ.", Q: "вопр. слово" };
 const LEX = {
+  mama: ["N", "мама"], spava: ["V", "спит"], njegove: ["P", "его"], igračke: ["N", "игрушки"], studentkinje: ["N", "студентки"], koja: ["P", "какая, которая"], adresa: ["N", "адрес"],
+  rusija: ["N", "Россия"], zemlja: ["N", "страна, земля"], drug: ["N", "друг, товарищ"], italija: ["N", "Италия"], država: ["N", "государство, страна"], london: ["N", "Лондон"],
   moji: ["P", "мои"], pismo: ["N", "письмо"], pisma: ["N", "письма"], koferi: ["N", "чемоданы"], sokovi: ["N", "соки"], drugarice: ["N", "подруги"], kakvo: ["P", "какое"], kola: ["N", "машина (мн. ч. ср. рода)"],
   njegov: ["P", "его"], njegova: ["P", "его"], njegovi: ["P", "его"], njen: ["P", "её"], njena: ["P", "её"], njeno: ["P", "её"], njene: ["P", "её"],
   njihov: ["P", "их"], njihova: ["P", "их"], njihove: ["P", "их"], čiji: ["P", "чей"], čija: ["P", "чья"], čije: ["P", "чьё, чьи"],
@@ -472,6 +474,7 @@ function analyze(text, over) {
 // Stress: which syllable carries it (1 = first). Serbian never stresses the last syllable of native words,
 // so one- and two-syllable words are stressed on the first; longer words are listed here. 0 = do not mark.
 const STRESS = {
+  njegove: 1, igračke: 1, studentkinje: 2, adresa: 1, rusija: 1, italija: 1, država: 1,
   njegovi: 1, njegova: 1, njihove: 1, njihova: 1, drugarice: 2, parkovi: 1, klubovi: 1, jezici: 1,
   telefoni: 1, mostovi: 1, poslovi: 1, miševi: 1, noževi: 1, ministar: 1, sastanci: 1, orasi: 1, stolice: 1, trgovi: 1, kompjuter: 0, kompjuteri: 0,
   udžbenik: 1, stolica: 1, olovka: 1, prezime: 1, kolega: 1, profesor: 2, učenik: 1, učenici: 1, gradovi: 1, stolovi: 1, brojevi: 1, turista: 2, lekarka: 1, profesorka: 2, učitelj: 1, konobar: 1,
